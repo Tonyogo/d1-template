@@ -1,8 +1,13 @@
 import { indexHtml } from "./indexHtml";
 
+declare const Buffer: any;
+
 // Define TypeScript interfaces for our API responses and DB rows
 interface Env {
 	DB: D1Database;
+	GEMINI_API_KEY?: string;
+	GEMINI_API_BASE?: string;
+	GEMINI_MODEL?: string;
 }
 
 interface DailySummary {
@@ -56,10 +61,271 @@ interface ActiveSectorMetricRow {
 	description: string | null;
 }
 
+interface StockParsed {
+	status: string | null;
+	code: string;
+	name: string;
+	time: string | null;
+	concept_reason: string | null;
+}
+
+interface SectorParsed {
+	name: string;
+	description: string;
+	stocks: StockParsed[];
+}
+
+export async function callGeminiOCR(imageBlob: Blob, mimeType: string, env: Env): Promise<string> {
+	const arrayBuffer = await imageBlob.arrayBuffer();
+	const base64String = Buffer.from(arrayBuffer).toString('base64');
+
+	const apiBase = env.GEMINI_API_BASE || 'https://generativelanguage.googleapis.com';
+	const model = env.GEMINI_MODEL || 'gemini-flash-latest';
+	const apiKey = env.GEMINI_API_KEY;
+
+	if (!apiKey) {
+		throw new Error("GEMINI_API_KEY is not configured");
+	}
+
+	const url = `${apiBase}/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+	const payload = {
+		contents: [
+			{
+				parts: [
+					{
+						inlineData: {
+							data: base64String,
+							mimeType: mimeType
+						}
+					},
+					{
+						text: "请对输入图片执行以下任务：1. 提取图片中所有可见文字 2. 保持原始阅读顺序 3. 按内容结构转换为 Markdown 4. 只输出最终 Markdown 格式"
+					}
+				],
+				role: "user"
+			}
+		],
+		systemInstruction: {
+			parts: [
+				{
+					text: "# OCR 助手\n你是一个专业的 OCR 与文档结构重建引擎。\n你的任务是将图片中的文字内容，严格、完整地转换为 Markdown 文档。\n\n必须遵守以下规则：\n1. 只输出 Markdown，不要输出任何解释性文字\n2. 不增加、不删除、不改写原始内容\n3. 保持原始阅读顺序\n4. 无法识别的内容用 `<!-- unreadable -->` 标记\n5. 所有文字都是从图片中获取，不要掺杂非图片中的文字\n\n结构转换规则：\n- 标题 → # / ## / ###\n- 段落 → 普通文本\n- 列表 → Markdown 列表\n- 表格 → Markdown 表格\n- 代码 → ``` 包裹\n- 强调 → ** / *\n\n排版规则：\n- 合并不必要的换行\n- 保持语义完整\n"
+				}
+			],
+			role: "user"
+		}
+	};
+
+	const response = await fetch(url, {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json'
+		},
+		body: JSON.stringify(payload)
+	});
+
+	if (!response.ok) {
+		const errText = await response.text();
+		throw new Error(`Gemini API error: ${response.status} ${response.statusText} - ${errText}`);
+	}
+
+	const json: any = await response.json();
+	if (!json.candidates || json.candidates.length === 0 || !json.candidates[0].content || !json.candidates[0].content.parts || json.candidates[0].content.parts.length === 0) {
+		throw new Error("Empty or invalid response from Gemini API");
+	}
+
+	return json.candidates[0].content.parts[0].text;
+}
+
+export function parseOcrMarkdown(markdown: string): { summary: DailySummary; sectorsAndStocks: SectorParsed[] } {
+	// Clean stars * from the markdown first.
+	const cleanMarkdown = markdown.replace(/\*/g, '');
+
+	const STOCK_COUNT_PAT = /(?:涨停个数|涨停个股|涨停数)\s*[:：]\s*([-+]?\d+(?:\.\d+)?)\s*(?:只|个)?/;
+	const UPGRADE_PAT = /(?:总晋级率|连板晋级率|晋级率|连晋率|总首板率|首板率|总普涨率|普涨率|总普盈率|普盈率)\s*[:：]\s*([-+]?\d+(?:\.\d+)?)\s*%/;
+	const BROKEN_PAT = /(?:总炸板率|炸板率|总体板率|总结板率|总昨板率|总触板率)\s*[:：]\s*([-+]?\d+(?:\.\d+)?)\s*%/;
+	const BIDDING_PAT = /(?:总竞价涨幅|竞价涨幅|急昨价涨幅)\s*[:：]\s*([-+]?\d+(?:\.\d+)?)\s*%/;
+	const SECTOR_PAT = /^(#{2,3})\s*([^：:\n]+)(?:[:：]\s*(.*))?$/;
+
+	const scMatch = cleanMarkdown.match(STOCK_COUNT_PAT);
+	const upMatch = cleanMarkdown.match(UPGRADE_PAT);
+	const brMatch = cleanMarkdown.match(BROKEN_PAT);
+	const biMatch = cleanMarkdown.match(BIDDING_PAT);
+
+	const summary: DailySummary = {
+		date: "", // to be filled by caller
+		stock_count: scMatch ? parseInt(scMatch[1], 10) : 0,
+		upgrade_rate: upMatch ? parseFloat(upMatch[1]) : null,
+		limit_broken_rate: brMatch ? parseFloat(brMatch[1]) : null,
+		bidding_increase_rate: biMatch ? parseFloat(biMatch[1]) : null,
+	};
+
+	const lines = markdown.split('\n');
+	let currentSector: SectorParsed | null = null;
+	const sectorsAndStocks: SectorParsed[] = [];
+
+	for (const line of lines) {
+		const stripped = line.trim();
+		if (!stripped) {
+			continue;
+		}
+
+		// Check for sector header
+		const secMatch = stripped.match(SECTOR_PAT);
+		if (secMatch) {
+			const name = secMatch[2].trim();
+			const desc = secMatch[3] ? secMatch[3].trim() : "";
+
+			// Skip file headers or legend/descriptions
+			const skipList = ['一字涨停', 'T字涨停', '复盘', '说明', '同花顺数据可视化', 'A股涨停复盘'];
+			if (!skipList.includes(name)) {
+				currentSector = {
+					name,
+					description: desc,
+					stocks: []
+				};
+				sectorsAndStocks.push(currentSector);
+			}
+			continue;
+		}
+
+		// Check for stock table row
+		if (stripped.startsWith('|') && stripped.endsWith('|')) {
+			const parts = stripped.split('|').slice(1, -1).map(p => p.trim());
+			if (parts.length === 5) {
+				const code = parts[1];
+				if (/^\d{6}$/.test(code)) {
+					const stockRow: StockParsed = {
+						status: parts[0] || null,
+						code,
+						name: parts[2],
+						time: parts[3] || null,
+						concept_reason: parts[4] || null
+					};
+
+					if (currentSector) {
+						currentSector.stocks.push(stockRow);
+					} else {
+						currentSector = {
+							name: "其他概念",
+							description: "",
+							stocks: [stockRow]
+						};
+						sectorsAndStocks.push(currentSector);
+					}
+				}
+			}
+		}
+	}
+
+	return { summary, sectorsAndStocks };
+}
+
 export default {
 	async fetch(request: Request, env: Env): Promise<Response> {
 		const url = new URL(request.url);
 		const path = url.pathname;
+
+		// POST /api/upload
+		if (path === "/api/upload" && request.method === "POST") {
+			try {
+				if (!env.GEMINI_API_KEY) {
+					return Response.json({ error: "GEMINI_API_KEY is not configured. Please set it in your environment." }, { status: 400 });
+				}
+
+				const formData = await request.formData();
+				const date = formData.get("date") as string;
+				const file = formData.get("file") as File | null;
+
+				if (!date) {
+					return Response.json({ error: "Missing date parameter" }, { status: 400 });
+				}
+				if (!file) {
+					return Response.json({ error: "Missing file parameter" }, { status: 400 });
+				}
+
+				const mimeType = file.type || "image/png";
+				const rawMarkdown = await callGeminiOCR(file, mimeType, env);
+				const { summary, sectorsAndStocks } = parseOcrMarkdown(rawMarkdown);
+				summary.date = date;
+
+				// Database operations
+				const del1 = env.DB.prepare("DELETE FROM limit_up_stocks WHERE date = ?").bind(date);
+				const del2 = env.DB.prepare("DELETE FROM sectors WHERE date = ?").bind(date);
+				const del3 = env.DB.prepare("DELETE FROM daily_summary WHERE date = ?").bind(date);
+
+				const insSummary = env.DB.prepare(`
+					INSERT INTO daily_summary (date, stock_count, upgrade_rate, limit_broken_rate, bidding_increase_rate)
+					VALUES (?, ?, ?, ?, ?)
+				`).bind(
+					date,
+					summary.stock_count,
+					summary.upgrade_rate,
+					summary.limit_broken_rate,
+					summary.bidding_increase_rate
+				);
+
+				const insSectors = sectorsAndStocks.map(sec =>
+					env.DB.prepare(`
+						INSERT INTO sectors (date, name, description)
+						VALUES (?, ?, ?)
+					`).bind(date, sec.name, sec.description || null)
+				);
+
+				// Await first batch run
+				await env.DB.batch([del1, del2, del3, insSummary, ...insSectors]);
+
+				// Query sectors to map name to ID
+				const { results: dbSectors } = await env.DB.prepare(`
+					SELECT id, name FROM sectors WHERE date = ?
+				`).bind(date).all<{ id: number; name: string }>();
+
+				const sectorIdMap: Record<string, number> = {};
+				for (const row of dbSectors || []) {
+					sectorIdMap[row.name] = row.id;
+				}
+
+				// Construct and execute stock insertion batch
+				const stockStatements: any[] = [];
+				let stocksCount = 0;
+
+				for (const sec of sectorsAndStocks) {
+					const sectorId = sectorIdMap[sec.name] || null;
+					for (const stock of sec.stocks) {
+						stockStatements.push(
+							env.DB.prepare(`
+								INSERT INTO limit_up_stocks (date, status, code, name, time, concept_reason, sector_id)
+								VALUES (?, ?, ?, ?, ?, ?, ?)
+							`).bind(
+								date,
+								stock.status,
+								stock.code,
+								stock.name,
+								stock.time,
+								stock.concept_reason,
+								sectorId
+							)
+						);
+						stocksCount++;
+					}
+				}
+
+				if (stockStatements.length > 0) {
+					await env.DB.batch(stockStatements);
+				}
+
+				return Response.json({
+					success: true,
+					summary,
+					sectorsCount: sectorsAndStocks.length,
+					stocksCount,
+					rawMarkdown
+				});
+			} catch (error: any) {
+				console.error("Error inside POST /api/upload:", error);
+				return Response.json({ error: "Internal Server Error during upload processing", message: error.message }, { status: 500 });
+			}
+		}
 
 		try {
 			// 1. Serve frontend SPA index.html
