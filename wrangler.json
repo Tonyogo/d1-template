@@ -11,6 +11,12 @@
 			"database_name": "d1-db"
 		}
 	],
+	"r2_buckets": [
+		{
+			"binding": "BUCKET",
+			"bucket_name": "a-share-limit-up-images"
+		}
+	],
 	"observability": {
 		"enabled": true
 	},

@@ -246,6 +246,25 @@ export const indexHtml = `
                 </div>
             </div>
 
+            <!-- Screenshot Preview Box -->
+            <div id="review-image-card" class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden hidden">
+                <button onclick="toggleImageCollapse()" class="w-full px-6 py-4 flex items-center justify-between bg-slate-50/50 hover:bg-slate-50 transition-colors text-left border-b border-slate-100 font-bold">
+                    <div class="flex items-center space-x-3">
+                        <div class="p-1.5 bg-red-50 text-red-500 rounded-lg">
+                            <i data-lucide="image" class="w-4 h-4"></i>
+                        </div>
+                        <span class="text-sm font-extrabold text-slate-900">查看当日复盘原始长图</span>
+                    </div>
+                    <div class="p-1 text-slate-400 flex items-center space-x-2">
+                        <span id="image-toggle-status" class="text-xs font-semibold text-slate-400">展开</span>
+                        <i id="image-chevron" data-lucide="chevron-down" class="w-5 h-5 transition-transform duration-150"></i>
+                    </div>
+                </button>
+                <div id="image-collapse" class="hidden p-4 bg-slate-50 border-t border-slate-100 flex justify-center">
+                    <img id="review-image" src="" alt="复盘长图" class="max-w-full md:max-w-3xl h-auto rounded-xl shadow-md border border-slate-200" />
+                </div>
+            </div>
+
             <!-- Loader -->
             <div id="review-loader" class="hidden flex justify-center py-20">
                 <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-red-500"></div>
@@ -764,6 +783,31 @@ export const indexHtml = `
             accordionContainer.innerHTML = '';
 
             try {
+                // Load review image from R2
+                const imageCard = document.getElementById('review-image-card');
+                const reviewImg = document.getElementById('review-image');
+                const imageCollapse = document.getElementById('image-collapse');
+                const imageChevron = document.getElementById('image-chevron');
+                const imageToggleStatus = document.getElementById('image-toggle-status');
+
+                if (imageCard && reviewImg) {
+                    // Set source to our new GET /api/image route
+                    reviewImg.src = '/api/image?date=' + date;
+
+                    reviewImg.onload = () => {
+                        imageCard.classList.remove('hidden');
+                    };
+                    reviewImg.onerror = () => {
+                        // Hide card gracefully if no image exists or load fails
+                        imageCard.classList.add('hidden');
+                        // Ensure collapse is reset for the next loaded image
+                        if (imageCollapse) imageCollapse.classList.add('hidden');
+                        if (imageChevron) imageChevron.setAttribute('data-lucide', 'chevron-down');
+                        if (imageToggleStatus) imageToggleStatus.textContent = '展开';
+                        lucide.createIcons();
+                    };
+                }
+
                 const response = await fetch(\`/api/daily-details/\${date}\`);
                 if (!response.ok) throw new Error('API returned error');
                 const data = await response.json();
@@ -1465,6 +1509,25 @@ export const indexHtml = `
             } else {
                 mdContainer.classList.add('hidden');
                 icon.setAttribute('data-lucide', 'chevron-down');
+            }
+            lucide.createIcons();
+        }
+
+        // Toggle visibility of the screenshot image
+        function toggleImageCollapse() {
+            const imgContainer = document.getElementById('image-collapse');
+            const icon = document.getElementById('image-chevron');
+            const toggleStatus = document.getElementById('image-toggle-status');
+            if (!imgContainer || !icon) return;
+
+            if (imgContainer.classList.contains('hidden')) {
+                imgContainer.classList.remove('hidden');
+                icon.setAttribute('data-lucide', 'chevron-up');
+                if (toggleStatus) toggleStatus.textContent = '收起';
+            } else {
+                imgContainer.classList.add('hidden');
+                icon.setAttribute('data-lucide', 'chevron-down');
+                if (toggleStatus) toggleStatus.textContent = '展开';
             }
             lucide.createIcons();
         }

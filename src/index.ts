@@ -5,6 +5,7 @@ declare const Buffer: any;
 // Define TypeScript interfaces for our API responses and DB rows
 interface Env {
 	DB: D1Database;
+	BUCKET: R2Bucket;
 	GEMINI_API_KEY?: string;
 	GEMINI_API_BASE?: string;
 	GEMINI_MODEL?: string;
@@ -314,6 +315,27 @@ export default {
 					await env.DB.batch(stockStatements);
 				}
 
+				// Store the image inside R2 Bucket if it is bound
+				if (env.BUCKET) {
+					try {
+						const fileExtension = file.name.split('.').pop() || 'png';
+						const imageKey = `images/${date}.${fileExtension}`;
+						await env.BUCKET.put(imageKey, file.stream(), {
+							httpMetadata: {
+								contentType: mimeType,
+								cacheControl: "public, max-age=31536000",
+							},
+							customMetadata: {
+								uploadDate: new Date().toISOString(),
+								originalName: file.name
+							}
+						});
+					} catch (r2Error: any) {
+						console.error("Warning: Failed to save image to R2:", r2Error);
+						// We don't fail the entire response if only R2 upload fails
+					}
+				}
+
 				return Response.json({
 					success: true,
 					summary,
@@ -609,6 +631,49 @@ export default {
 				}));
 
 				return Response.json(activeSectorsList);
+			}
+
+			// 6. GET /api/image?date=YYYY-MM-DD
+			if (path === "/api/image" && request.method === "GET") {
+				const date = url.searchParams.get("date");
+				if (!date) {
+					return new Response(JSON.stringify({ error: "Missing date parameter" }), {
+						status: 400,
+						headers: { "Content-Type": "application/json" }
+					});
+				}
+
+				if (!env.BUCKET) {
+					return new Response(JSON.stringify({ error: "R2 bucket is not configured" }), {
+						status: 500,
+						headers: { "Content-Type": "application/json" }
+					});
+				}
+
+				// Attempt to sequentially search the possible image file extensions
+				const extensions = ["png", "jpg", "jpeg", "webp"];
+				let object: R2ObjectBody | null = null;
+				for (const ext of extensions) {
+					const tempObj = await env.BUCKET.get(`images/${date}.${ext}`);
+					if (tempObj) {
+						object = tempObj;
+						break;
+					}
+				}
+
+				if (!object) {
+					return new Response(JSON.stringify({ error: "Image Not Found for specified date" }), {
+						status: 404,
+						headers: { "Content-Type": "application/json" }
+					});
+				}
+
+				const headers = new Headers();
+				object.writeHttpMetadata(headers);
+				headers.set("etag", object.httpEtag);
+				headers.set("cache-control", "public, max-age=31536000");
+
+				return new Response(object.body, { headers });
 			}
 
 			// Fallback: 404 for unmatched endpoints
