@@ -1,0 +1,6 @@
+# Gemini API Key for local development and OCR processing
+# Rename or copy this file to `.dev.vars` in your local setup and fill in your actual Gemini API Key.
+# DO NOT commit `.dev.vars` containing your real keys to version control.
+# Note: Wrangler dev will automatically load secrets from `.dev.vars`.
+
+GEMINI_API_KEY="your_gemini_api_key_here"
