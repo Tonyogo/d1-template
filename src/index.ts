@@ -235,7 +235,7 @@ export default {
 
 				const formData = await request.formData();
 				const date = formData.get("date") as string;
-				const file = formData.get("file") as File | null;
+				const file = (formData.get("file") || formData.get("image")) as File | null;
 
 				if (!date) {
 					return Response.json({ error: "Missing date parameter" }, { status: 400 });
