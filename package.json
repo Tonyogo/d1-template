@@ -29,5 +29,8 @@
 		"seedLocalD1": "wrangler d1 migrations apply DB --local",
 		"seedLocalData": "wrangler d1 execute DB --local --file data.sql",
 		"seedRemoteData": "wrangler d1 execute DB --remote --file data.sql"
+	},
+	"dependencies": {
+		"hono": "^4.12.23"
 	}
 }
