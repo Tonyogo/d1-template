@@ -1,5 +1,7 @@
 import { Env } from '../types';
 
+declare const Buffer: any;
+
 export class GeminiClient {
 	/**
 	 * Call Gemini OCR API to extract text from image as Markdown
