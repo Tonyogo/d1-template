@@ -26,6 +26,8 @@
 		"deploy": "wrangler deploy",
 		"dev": "pnpm seedLocalD1 && wrangler dev",
 		"predeploy": "wrangler d1 migrations apply DB --remote",
-		"seedLocalD1": "wrangler d1 migrations apply DB --local"
+		"seedLocalD1": "wrangler d1 migrations apply DB --local",
+		"seedLocalData": "wrangler d1 execute DB --local --file data.sql",
+		"seedRemoteData": "wrangler d1 execute DB --remote --file data.sql"
 	}
 }

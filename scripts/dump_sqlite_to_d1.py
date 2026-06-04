@@ -6,6 +6,7 @@ import sqlite3
 
 LEGACY_DB_PATH = "/Users/yogo/WebstormProjects/d1-template/legacy/market_data.db"
 MIGRATIONS_DIR = "/Users/yogo/WebstormProjects/d1-template/migrations"
+DATA_SQL_PATH = "/Users/yogo/WebstormProjects/d1-template/data.sql"
 
 def find_migration_file():
     for f in os.listdir(MIGRATIONS_DIR):
@@ -22,7 +23,7 @@ def escape_sql_str(val):
     escaped = str(val).replace("'", "''")
     return f"'{escaped}'"
 
-def dump_table_data(cursor, table_name, columns, out_file, chunk_size=1000):
+def dump_table_data(cursor, table_name, columns, out_file):
     print(f"Dumping data for {table_name}...")
     cursor.execute(f"SELECT {', '.join(columns)} FROM {table_name}")
 
@@ -32,8 +33,6 @@ def dump_table_data(cursor, table_name, columns, out_file, chunk_size=1000):
 
     col_str = ", ".join(columns)
 
-    # Note: Cloudflare D1 migrations execute the entire file inside a single transaction.
-    # Therefore, we MUST NOT include BEGIN TRANSACTION; or COMMIT; inside the SQL file itself!
     for row in rows:
         vals = [escape_sql_str(row[col]) for col in columns]
         vals_str = ", ".join(vals)
@@ -47,23 +46,24 @@ def main():
 
     mig_file_path = find_migration_file()
     print(f"Target migration file: {mig_file_path}")
+    print(f"Target data file: {DATA_SQL_PATH}")
 
     conn = sqlite3.connect(LEGACY_DB_PATH)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
 
-    with open(mig_file_path, "w", encoding="utf-8") as f:
-        f.write("-- Migration number: 0002\n")
-        f.write("-- Migrate Legacy Market Data to D1 (SQLite-compatible)\n\n")
+    # 1. Write Table Schemas to Migration file
+    with open(mig_file_path, "w", encoding="utf-8") as f_mig:
+        f_mig.write("-- Migration number: 0002\n")
+        f_mig.write("-- Migrate Legacy Market Data to D1 (SQLite-compatible)\n\n")
 
-        # 1. Write Table Schemas
-        f.write("-- Drop existing tables if any\n")
-        f.write("DROP TABLE IF EXISTS limit_up_stocks;\n")
-        f.write("DROP TABLE IF EXISTS sectors;\n")
-        f.write("DROP TABLE IF EXISTS daily_summary;\n\n")
+        f_mig.write("-- Drop existing tables if any\n")
+        f_mig.write("DROP TABLE IF EXISTS limit_up_stocks;\n")
+        f_mig.write("DROP TABLE IF EXISTS sectors;\n")
+        f_mig.write("DROP TABLE IF EXISTS daily_summary;\n\n")
 
-        f.write("-- Create Table: daily_summary\n")
-        f.write("""CREATE TABLE daily_summary (
+        f_mig.write("-- Create Table: daily_summary\n")
+        f_mig.write("""CREATE TABLE daily_summary (
     date TEXT PRIMARY KEY,
     stock_count INTEGER,
     upgrade_rate REAL,
@@ -71,8 +71,8 @@ def main():
     bidding_increase_rate REAL
 );\n\n""")
 
-        f.write("-- Create Table: sectors\n")
-        f.write("""CREATE TABLE sectors (
+        f_mig.write("-- Create Table: sectors\n")
+        f_mig.write("""CREATE TABLE sectors (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     date TEXT NOT NULL,
     name TEXT NOT NULL,
@@ -80,8 +80,8 @@ def main():
     UNIQUE(date, name)
 );\n\n""")
 
-        f.write("-- Create Table: limit_up_stocks\n")
-        f.write("""CREATE TABLE limit_up_stocks (
+        f_mig.write("-- Create Table: limit_up_stocks\n")
+        f_mig.write("""CREATE TABLE limit_up_stocks (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     date TEXT NOT NULL,
     status TEXT,
@@ -94,40 +94,24 @@ def main():
     UNIQUE(date, code)
 );\n\n""")
 
-        # 2. Dump table data in batches
-        dump_table_data(
-            cursor,
-            "daily_summary",
-            ["date", "stock_count", "upgrade_rate", "limit_broken_rate", "bidding_increase_rate"],
-            f
-        )
-        f.write("\n")
+        # 2. Write Data to data.sql
+        with open(DATA_SQL_PATH, "w", encoding="utf-8") as f_data:
+            dump_table_data(cursor, "daily_summary", ["date", "stock_count", "upgrade_rate", "limit_broken_rate", "bidding_increase_rate"], f_data)
+            f_data.write("\n")
+            dump_table_data(cursor, "sectors", ["id", "date", "name", "description"], f_data)
+            f_data.write("\n")
+            dump_table_data(cursor, "limit_up_stocks", ["id", "date", "status", "code", "name", "time", "concept_reason", "sector_id"], f_data)
+            f_data.write("\n")
 
-        dump_table_data(
-            cursor,
-            "sectors",
-            ["id", "date", "name", "description"],
-            f
-        )
-        f.write("\n")
-
-        dump_table_data(
-            cursor,
-            "limit_up_stocks",
-            ["id", "date", "status", "code", "name", "time", "concept_reason", "sector_id"],
-            f
-        )
-        f.write("\n")
-
-        # 3. Create Indexes
-        f.write("-- Indexes for query performance\n")
-        f.write("CREATE INDEX IF NOT EXISTS idx_sectors_date ON sectors(date);\n")
-        f.write("CREATE INDEX IF NOT EXISTS idx_stocks_date ON limit_up_stocks(date);\n")
-        f.write("CREATE INDEX IF NOT EXISTS idx_stocks_code ON limit_up_stocks(code);\n")
-        f.write("CREATE INDEX IF NOT EXISTS idx_stocks_sector ON limit_up_stocks(sector_id);\n")
+        # 3. Write Indexes to Migration file
+        f_mig.write("-- Indexes for query performance\n")
+        f_mig.write("CREATE INDEX IF NOT EXISTS idx_sectors_date ON sectors(date);\n")
+        f_mig.write("CREATE INDEX IF NOT EXISTS idx_stocks_date ON limit_up_stocks(date);\n")
+        f_mig.write("CREATE INDEX IF NOT EXISTS idx_stocks_code ON limit_up_stocks(code);\n")
+        f_mig.write("CREATE INDEX IF NOT EXISTS idx_stocks_sector ON limit_up_stocks(sector_id);\n")
 
     conn.close()
-    print("Database migration SQL generated successfully!")
+    print("Database migration SQL and data seed file generated successfully!")
 
 if __name__ == "__main__":
     main()
