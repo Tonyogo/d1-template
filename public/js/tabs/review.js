@@ -26,16 +26,14 @@ export class ReviewTab {
     }
 
     toggleImage() {
-        if (this.imageCollapse.classList.contains('hidden')) {
-            this.imageCollapse.classList.remove('hidden');
-            this.imageChevron.setAttribute('data-lucide', 'chevron-up');
-            this.imageToggleStatus.textContent = '收起';
-        } else {
-            this.imageCollapse.classList.add('hidden');
-            this.imageChevron.setAttribute('data-lucide', 'chevron-down');
-            this.imageToggleStatus.textContent = '展开';
+        const isHidden = this.imageCollapse.classList.contains('hidden');
+        this.imageCollapse.classList.toggle('hidden');
+        this.imageToggleStatus.textContent = isHidden ? '收起' : '展开';
+
+        const chevron = document.getElementById('image-chevron');
+        if (chevron) {
+            chevron.classList.toggle('rotate-180', isHidden);
         }
-        lucide.createIcons();
     }
 
     async loadDailyDetails(date) {
@@ -50,7 +48,8 @@ export class ReviewTab {
             this.reviewImg.onerror = () => {
                 this.imageCard.classList.add('hidden');
                 this.imageCollapse.classList.add('hidden');
-                this.imageChevron.setAttribute('data-lucide', 'chevron-down');
+                const chevron = document.getElementById('image-chevron');
+                if (chevron) chevron.classList.remove('rotate-180');
                 this.imageToggleStatus.textContent = '展开';
                 lucide.createIcons();
             };
@@ -117,7 +116,7 @@ export class ReviewTab {
                         <div class="p-1 text-slate-400"><i data-lucide="chevron-down" class="w-5 h-5 transition-transform duration-150"></i></div>
                     </div>
                 </button>
-                <div class="hidden border-t border-slate-100 overflow-x-auto">
+                <div class="sector-collapse hidden border-t border-slate-100 overflow-x-auto">
                     <table class="min-w-full divide-y divide-slate-100">
                         <thead class="bg-slate-50/50">
                             <tr>
@@ -134,18 +133,14 @@ export class ReviewTab {
             `;
 
             const btnToggle = item.querySelector('button');
-            const collapse = item.querySelector('div:last-child');
-            const icon = item.querySelector('button i[data-lucide="chevron-down"]');
+            const collapse = item.querySelector('.sector-collapse');
+            const icon = btnToggle.querySelector('.transition-transform');
 
             btnToggle.addEventListener('click', () => {
-                if (collapse.classList.contains('hidden')) {
-                    collapse.classList.remove('hidden');
-                    icon.setAttribute('data-lucide', 'chevron-up');
-                } else {
-                    collapse.classList.add('hidden');
-                    icon.setAttribute('data-lucide', 'chevron-down');
+                collapse.classList.toggle('hidden');
+                if (icon) {
+                    icon.classList.toggle('rotate-180');
                 }
-                lucide.createIcons();
             });
 
             item.querySelectorAll('[stock-link]').forEach(el => {

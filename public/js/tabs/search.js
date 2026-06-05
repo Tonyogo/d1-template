@@ -216,7 +216,7 @@ export class SearchTab {
                                 <div class="p-1 text-slate-400"><i data-lucide="chevron-down" class="w-5 h-5 transition-transform duration-150"></i></div>
                             </div>
                         </button>
-                        <div class="hidden border-t border-slate-100 overflow-x-auto bg-slate-50/30">
+                        <div class="stock-collapse hidden border-t border-slate-100 overflow-x-auto bg-slate-50/30">
                             <table class="min-w-full divide-y divide-slate-100">
                                 <thead class="bg-slate-50/50">
                                     <tr>
@@ -233,18 +233,14 @@ export class SearchTab {
                     `;
 
                     const btnToggle = card.querySelector('button');
-                    const collapse = card.querySelector('div:last-child');
-                    const icon = card.querySelector('button i[data-lucide="chevron-down"]');
+                    const collapse = card.querySelector('.stock-collapse');
+                    const icon = btnToggle.querySelector('.transition-transform');
 
                     btnToggle.addEventListener('click', () => {
-                        if (collapse.classList.contains('hidden')) {
-                            collapse.classList.remove('hidden');
-                            icon.setAttribute('data-lucide', 'chevron-up');
-                        } else {
-                            collapse.classList.add('hidden');
-                            icon.setAttribute('data-lucide', 'chevron-down');
+                        collapse.classList.toggle('hidden');
+                        if (icon) {
+                            icon.classList.toggle('rotate-180');
                         }
-                        lucide.createIcons();
                     });
 
                     // 给跨 Tab 的跳转项绑定点击监听

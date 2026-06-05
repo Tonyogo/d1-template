@@ -67,14 +67,11 @@ export class UploadTab {
     }
 
     toggleMarkdown() {
-        if (this.markdownCollapse.classList.contains('hidden')) {
-            this.markdownCollapse.classList.remove('hidden');
-            this.markdownChevron.setAttribute('data-lucide', 'chevron-up');
-        } else {
-            this.markdownCollapse.classList.add('hidden');
-            this.markdownChevron.setAttribute('data-lucide', 'chevron-down');
+        this.markdownCollapse.classList.toggle('hidden');
+        const chevron = document.getElementById('markdown-chevron');
+        if (chevron) {
+            chevron.classList.toggle('rotate-180');
         }
-        lucide.createIcons();
     }
 
     handleFiles(files) {
@@ -149,7 +146,7 @@ export class UploadTab {
             } else if (phases.indexOf(p) < phases.indexOf(phase)) {
                 el.className = "flex items-center space-x-3 p-3 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 font-semibold shadow-sm";
                 if (iconWrap) iconWrap.className = "phase-icon p-1.5 rounded-lg bg-emerald-100 text-emerald-500";
-                const icon = iconWrap.querySelector('i');
+                const icon = iconWrap.querySelector('i, svg');
                 if (icon) icon.setAttribute('data-lucide', 'check');
             } else {
                 el.className = "flex items-center space-x-3 p-3 rounded-xl border border-slate-100 bg-slate-50/50 text-slate-400";
@@ -235,10 +232,17 @@ export class UploadTab {
             }
         });
 
-        document.querySelector('#phase-read i').setAttribute('data-lucide', 'file-text');
-        document.querySelector('#phase-ocr i').setAttribute('data-lucide', 'cpu');
-        document.querySelector('#phase-parse i').setAttribute('data-lucide', 'binary');
-        document.querySelector('#phase-save i').setAttribute('data-lucide', 'database');
+        const selectIcon = (id) => document.querySelector(`#${id} i, #${id} svg`);
+
+        const iconRead = selectIcon('phase-read');
+        const iconOcr = selectIcon('phase-ocr');
+        const iconParse = selectIcon('phase-parse');
+        const iconSave = selectIcon('phase-save');
+
+        if (iconRead) iconRead.setAttribute('data-lucide', 'file-text');
+        if (iconOcr) iconOcr.setAttribute('data-lucide', 'cpu');
+        if (iconParse) iconParse.setAttribute('data-lucide', 'binary');
+        if (iconSave) iconSave.setAttribute('data-lucide', 'database');
 
         lucide.createIcons();
     }
