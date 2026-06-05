@@ -1,7 +1,7 @@
 import { DailySummary } from '../types';
 
 export class SummaryRepository {
-	constructor(private db: D1Database) {}
+	constructor(public db: D1Database) {}
 
 	async getAll(): Promise<DailySummary[]> {
 		const { results } = await this.db.prepare(`

@@ -1,7 +1,7 @@
 import { SectorRow } from '../types';
 
 export class SectorRepository {
-	constructor(private db: D1Database) {}
+	constructor(public db: D1Database) {}
 
 	async deleteByDate(date: string): Promise<void> {
 		await this.db.prepare("DELETE FROM sectors WHERE date = ?").bind(date).run();

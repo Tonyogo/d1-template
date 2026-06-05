@@ -1,7 +1,7 @@
 import { StockRow, SearchRow, ActiveSectorMetricRow, LeaderRow } from '../types';
 
 export class StockRepository {
-	constructor(private db: D1Database) {}
+	constructor(public db: D1Database) {}
 
 	async deleteByDate(date: string): Promise<void> {
 		await this.db.prepare("DELETE FROM limit_up_stocks WHERE date = ?").bind(date).run();
