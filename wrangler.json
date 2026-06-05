@@ -24,7 +24,7 @@
 		"enabled": true
 	},
 	"vars": {
-		"GEMINI_API_BASE": "https://gemini-balance-lite.tonyogo.deno.net",
+		"GEMINI_API_BASE": "https://generativelanguage.googleapis.com",
 		"GEMINI_MODEL": "gemini-flash-latest"
 	}
 }
