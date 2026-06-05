@@ -86,11 +86,35 @@ export class UploadTab {
 
         // 正则提取文件名里的日期
         const extDate = this.extractDate(file.name);
-        if (extDate) {
+        // 仅当提取出了日期，并且是一个真实有效的自然日时才进行赋值覆盖，避免浏览器静默置空
+        if (extDate && this.isValidDate(extDate)) {
             this.dateInput.value = extDate;
         }
 
         this.uploadFile(file, this.dateInput.value);
+    }
+
+    isValidDate(dateString) {
+        // 必须符合 YYYY-MM-DD 格式
+        const reg = /^\d{4}-\d{2}-\d{2}$/;
+        if (!dateString || !reg.test(dateString)) return false;
+
+        const parts = dateString.split('-');
+        const year = parseInt(parts[0], 10);
+        const month = parseInt(parts[1], 10);
+        const day = parseInt(parts[2], 10);
+
+        // 基础年份与月份校验
+        if (year < 1000 || year > 3000 || month === 0 || month > 12) return false;
+
+        const monthLength = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+
+        // 闰年二月处理
+        if (year % 400 === 0 || (year % 100 !== 0 && year % 4 === 0)) {
+            monthLength[1] = 29;
+        }
+
+        return day > 0 && day <= monthLength[month - 1];
     }
 
     extractDate(filename) {
@@ -136,6 +160,12 @@ export class UploadTab {
     }
 
     async uploadFile(file, dateStr) {
+        if (!dateStr) {
+            alert('请提供或选择有效的复盘日期（格式：YYYY-MM-DD）！');
+            this.resetForm();
+            return;
+        }
+
         this.progressContainer.classList.remove('hidden');
         this.statusBox.classList.add('hidden');
         this.dropZone.style.pointerEvents = 'none';
