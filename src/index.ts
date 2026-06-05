@@ -1,9 +1,10 @@
 import { Hono } from 'hono';
 import { Env } from './types';
+import { registerRoutes } from './controllers';
 
 const app = new Hono<{ Bindings: Env }>();
 
-// 所有的后端 API 一律挂载至 /api 前缀下
-app.get('/api/health', (c) => c.json({ status: 'ok', service: 'A-Share Limit-up Backend' }));
+// 自动向 Hono 注册所有的 API 路由
+registerRoutes(app);
 
 export default app;
