@@ -379,10 +379,10 @@ export class UploadTab {
 
                 try {
                     const data = await api.batchUpload(formData);
-                    if (data.error || !data.r2Url) {
+                    if (data.error || !data.imageKey) {
                         throw new Error(data.message || data.error || '上传失败');
                     }
-                    task.r2Url = data.r2Url;
+                    task.imageKey = data.imageKey;
                     task.status = 'uploaded';
                     this.updateTaskUI(task);
                 } catch (err) {
@@ -408,7 +408,6 @@ export class UploadTab {
 
                 try {
                     const payload = {
-                        r2Url: task.r2Url,
                         date: task.date
                     };
                     const res = await api.batchProcess(payload);
