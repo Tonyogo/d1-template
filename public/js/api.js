@@ -14,5 +14,7 @@ export const api = {
         return fetch('/api/search?' + queryParams.toString()).then(r => r.json());
     },
     getActiveSectors: (days) => fetch(`/api/active-sectors?days=${days}`).then(r => r.json()),
-    uploadImage: (formData) => fetch('/api/upload', { method: 'POST', body: formData }).then(r => r.json())
+    uploadImage: (formData) => fetch('/api/upload', { method: 'POST', body: formData }).then(r => r.json()),
+    batchUpload: (formData) => fetch('/api/batch/upload', { method: 'POST', body: formData }).then(r => r.json()),
+    batchProcess: (payload) => fetch('/api/batch/process', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }).then(r => r.json())
 };
