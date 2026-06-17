@@ -12,13 +12,8 @@ class App {
     }
 
     initDOM() {
-        this.buttons = {
-            search: document.getElementById('tab-btn-search'),
-            review: document.getElementById('tab-btn-review'),
-            active: document.getElementById('tab-btn-active'),
-            upload: document.getElementById('tab-btn-upload')
-        };
-
+        // 查找所有具有 data-tab 属性的导航按钮（包含顶部和底部）
+        this.navButtons = document.querySelectorAll('button[data-tab]');
         this.contents = {
             search: document.getElementById('tab-content-search'),
             review: document.getElementById('tab-content-review'),
@@ -26,8 +21,9 @@ class App {
             upload: document.getElementById('tab-content-upload')
         };
 
-        Object.keys(this.buttons).forEach(tab => {
-            this.buttons[tab].addEventListener('click', () => this.switchTab(tab));
+        this.navButtons.forEach(btn => {
+            const tab = btn.getAttribute('data-tab');
+            btn.addEventListener('click', () => this.switchTab(tab));
         });
     }
 
@@ -58,7 +54,6 @@ class App {
                 select.appendChild(opt);
             });
 
-            // 自动加载最新日期数据
             const latest = summaries[0].date;
             select.value = latest;
             this.reviewTab.loadDailyDetails(latest);
@@ -72,15 +67,37 @@ class App {
     switchTab(tab) {
         this.currentTab = tab;
 
-        // 重置样式
-        Object.keys(this.buttons).forEach(t => {
-            this.buttons[t].className = "px-4 py-2 text-sm font-semibold rounded-lg flex items-center space-x-2 transition duration-150 ease-in-out text-slate-600 hover:text-slate-900";
+        // 1. 隐藏所有 Tab 容器
+        Object.keys(this.contents).forEach(t => {
             this.contents[t].classList.add('hidden');
         });
-
-        // 激活样式
-        this.buttons[tab].className = "px-4 py-2 text-sm font-semibold rounded-lg flex items-center space-x-2 transition duration-150 ease-in-out bg-white text-slate-900 shadow-sm";
         this.contents[tab].classList.remove('hidden');
+
+        // 2. 遍历并联动高亮桌面顶部和移动底部的对应 Tab 按钮
+        this.navButtons.forEach(btn => {
+            const btnTab = btn.getAttribute('data-tab');
+            const isDesktop = btn.closest('nav').classList.contains('md:flex');
+
+            if (btnTab === tab) {
+                if (isDesktop) {
+                    // 桌面端激活样式
+                    btn.className = "px-4 py-2 text-sm font-semibold rounded-lg flex items-center space-x-2 transition duration-150 ease-in-out bg-white text-slate-900 shadow-sm";
+                    btn.querySelector('i').className = "w-4 h-4 text-red-500";
+                } else {
+                    // 移动端激活样式
+                    btn.className = "flex flex-col items-center space-y-0.5 text-red-500 font-bold transition py-1 px-3 rounded-lg";
+                }
+            } else {
+                if (isDesktop) {
+                    // 桌面端非激活样式
+                    btn.className = "px-4 py-2 text-sm font-semibold rounded-lg flex items-center space-x-2 transition duration-150 ease-in-out text-slate-600 hover:text-slate-900";
+                    btn.querySelector('i').className = "w-4 h-4 text-slate-400";
+                } else {
+                    // 移动端非激活样式
+                    btn.className = "flex flex-col items-center space-y-0.5 text-slate-500 transition py-1 px-3 rounded-lg";
+                }
+            }
+        });
 
         if (tab === 'active' && this.activeTab.rawData.length === 0) {
             this.activeTab.loadActiveSectors("30");
@@ -103,7 +120,6 @@ class App {
         return 'bg-slate-50 text-slate-600 border border-slate-100';
     }
 
-    // 跨 Tab 跳转深度链接函数
     deepLinkStock(stockName) {
         this.switchTab('search');
         this.searchTab.input.value = stockName;
