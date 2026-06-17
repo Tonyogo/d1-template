@@ -88,12 +88,15 @@ export class ReviewTab {
             sector.stocks.forEach(stock => {
                 const statusStyle = this.app.getStatusBadgeStyle(stock.status);
                 stockRows += `
-                    <tr class="flex flex-col md:table-row hover:bg-slate-50/50 transition-colors border-b border-slate-100 last:border-b-0 md:border-b-0">
-                        <td class="px-4 pt-3 pb-1 md:px-6 md:py-3 text-sm whitespace-nowrap flex justify-between items-center md:table-cell">
+                    <tr class="flex flex-col md:table-row p-4 md:p-3 mb-3 md:mb-0 border border-slate-200 md:border-0 rounded-xl md:rounded-none bg-white md:bg-transparent shadow-sm md:shadow-none hover:bg-slate-50/50 transition-colors">
+                        <td class="flex md:table-cell justify-between items-center px-0 md:px-6 py-1.5 md:py-3 border-b md:border-b-0 border-slate-100 pb-2 md:pb-3 text-sm">
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-semibold ${statusStyle}">
                                 ${stock.status || '涨停'}
                             </span>
-                            <span class="text-sm text-slate-500 font-mono md:hidden">${stock.time || '--:--'}</span>
+                            <span class="md:hidden text-xs text-slate-400 font-mono flex items-center gap-1">
+                                <i data-lucide="clock" class="w-3.5 h-3.5"></i>
+                                <span>${stock.time || '--:--'}</span>
+                            </span>
                         </td>
                         <td class="hidden md:table-cell px-6 py-3 text-sm text-slate-500 font-mono whitespace-nowrap">${stock.code}</td>
                         <td class="px-4 py-1 md:px-6 md:py-3 text-sm text-slate-900 whitespace-nowrap hover:text-red-500 cursor-pointer flex items-baseline space-x-2 md:table-cell" stock-link="${stock.name}">
@@ -101,7 +104,10 @@ export class ReviewTab {
                             <span class="text-xs text-slate-400 font-mono font-medium md:hidden">${stock.code}</span>
                         </td>
                         <td class="hidden md:table-cell px-6 py-3 text-sm text-slate-500 font-mono whitespace-nowrap">${stock.time || '--:--'}</td>
-                        <td class="px-4 py-2.5 text-sm text-slate-600 bg-slate-50 rounded-lg mx-4 mb-3 md:mx-0 md:mb-0 md:bg-transparent md:px-6 md:py-3 md:table-cell">${stock.concept_reason || '--'}</td>
+                        <td class="block md:table-cell px-0 md:px-6 py-1.5 md:py-3 text-sm text-slate-600 bg-slate-50 md:bg-transparent p-2.5 md:p-0 rounded-lg">
+                            <div class="md:hidden text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">涨停动因 & 概念</div>
+                            <div class="leading-relaxed text-xs md:text-sm">${stock.concept_reason || '--'}</div>
+                        </td>
                     </tr>
                 `;
             });

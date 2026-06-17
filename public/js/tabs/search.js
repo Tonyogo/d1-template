@@ -177,12 +177,15 @@ export class SearchTab {
                     stock.history.forEach(item => {
                         const statusStyle = this.app.getStatusBadgeStyle(item.status);
                         historyRows += `
-                            <tr class="flex flex-col md:table-row hover:bg-slate-50/50 transition-colors border-b border-slate-100 last:border-b-0 md:border-b-0">
-                                <td class="px-4 pt-3 pb-1 md:px-6 md:py-3 text-sm text-slate-700 font-semibold font-mono flex justify-between items-center md:table-cell whitespace-nowrap">
-                                    <span class="hover:text-red-500 cursor-pointer" date-link="${item.date}">${item.date}</span>
-                                    <span class="text-sm text-slate-500 font-mono md:hidden">${item.time || '--:--'}</span>
+                            <tr class="flex flex-col md:table-row p-4 md:p-3 mb-3 md:mb-0 border border-slate-200 md:border-0 rounded-xl md:rounded-none bg-white md:bg-transparent shadow-sm md:shadow-none hover:bg-slate-50/50 transition-colors">
+                                <td class="flex md:table-cell justify-between items-center px-0 md:px-6 py-1.5 md:py-3 border-b md:border-b-0 border-slate-100 pb-2 md:pb-3 text-sm">
+                                    <span class="text-slate-700 font-semibold font-mono hover:text-red-500 cursor-pointer text-sm" date-link="${item.date}">${item.date}</span>
+                                    <span class="md:hidden text-xs text-slate-400 font-mono flex items-center gap-1">
+                                        <i data-lucide="clock" class="w-3.5 h-3.5"></i>
+                                        <span>${item.time || '--:--'}</span>
+                                    </span>
                                 </td>
-                                <td class="px-4 py-1 md:px-6 md:py-3 text-sm whitespace-nowrap flex items-center space-x-2 md:table-cell">
+                                <td class="px-0 md:px-6 py-1 md:py-3 text-sm whitespace-nowrap flex items-center space-x-2 md:table-cell">
                                     <span class="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-semibold ${statusStyle}">
                                         ${item.status || '涨停'}
                                     </span>
@@ -196,7 +199,10 @@ export class SearchTab {
                                         ${item.sector_name || '其他概念'}
                                     </span>
                                 </td>
-                                <td class="px-4 py-2.5 text-sm text-slate-600 bg-slate-50 rounded-lg mx-4 mb-3 md:mx-0 md:mb-0 md:bg-transparent md:px-6 md:py-3 md:table-cell md:max-w-sm md:truncate" title="${item.concept_reason || ''}">${item.concept_reason || '--'}</td>
+                                <td class="block md:table-cell px-0 md:px-6 py-1.5 md:py-3 text-sm text-slate-600 bg-slate-50 md:bg-transparent p-2.5 md:p-0 rounded-lg md:max-w-sm md:truncate" title="${item.concept_reason || ''}">
+                                    <div class="md:hidden text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">涨停动因 & 概念</div>
+                                    <div class="leading-relaxed text-xs md:text-sm">${item.concept_reason || '--'}</div>
+                                </td>
                             </tr>
                         `;
                     });
