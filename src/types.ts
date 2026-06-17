@@ -4,6 +4,7 @@ export interface Env {
 	GEMINI_API_KEY?: string;
 	GEMINI_API_BASE?: string;
 	GEMINI_MODEL?: string;
+	FEISHU_VERIFICATION_TOKEN?: string; // 飞书安全校验 Token
 }
 
 export interface DailySummary {
