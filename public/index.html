@@ -8,7 +8,7 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="/css/app.css">
 </head>
-<body class="bg-slate-50 font-sans text-slate-800 antialiased min-h-screen flex flex-col">
+<body class="bg-slate-50 font-sans text-slate-800 antialiased min-h-screen flex flex-col pb-20 md:pb-0">
 
     <header class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
         <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -23,20 +23,21 @@
                     </div>
                 </div>
 
-                <nav class="flex space-x-1 bg-slate-100 p-1 rounded-xl" aria-label="Tabs">
-                    <button id="tab-btn-search" class="px-4 py-2 text-sm font-semibold rounded-lg flex items-center space-x-2 transition duration-150 ease-in-out bg-white text-slate-900 shadow-sm">
+                <!-- Tabs switcher -->
+                <nav class="hidden md:flex space-x-1 bg-slate-100 p-1 rounded-xl" aria-label="Tabs">
+                    <button data-tab="search" class="px-4 py-2 text-sm font-semibold rounded-lg flex items-center space-x-2 transition duration-150 ease-in-out bg-white text-slate-900 shadow-sm">
                         <i data-lucide="search" class="w-4 h-4 text-red-500"></i>
                         <span>个股查询</span>
                     </button>
-                    <button id="tab-btn-review" class="px-4 py-2 text-sm font-semibold rounded-lg flex items-center space-x-2 transition duration-150 ease-in-out text-slate-600 hover:text-slate-900">
+                    <button data-tab="review" class="px-4 py-2 text-sm font-semibold rounded-lg flex items-center space-x-2 transition duration-150 ease-in-out text-slate-600 hover:text-slate-900">
                         <i data-lucide="calendar" class="w-4 h-4"></i>
                         <span>每日复盘</span>
                     </button>
-                    <button id="tab-btn-active" class="px-4 py-2 text-sm font-semibold rounded-lg flex items-center space-x-2 transition duration-150 ease-in-out text-slate-600 hover:text-slate-900">
+                    <button data-tab="active" class="px-4 py-2 text-sm font-semibold rounded-lg flex items-center space-x-2 transition duration-150 ease-in-out text-slate-600 hover:text-slate-900">
                         <i data-lucide="award" class="w-4 h-4"></i>
                         <span>活跃板块</span>
                     </button>
-                    <button id="tab-btn-upload" class="px-4 py-2 text-sm font-semibold rounded-lg flex items-center space-x-2 transition duration-150 ease-in-out text-slate-600 hover:text-slate-900">
+                    <button data-tab="upload" class="px-4 py-2 text-sm font-semibold rounded-lg flex items-center space-x-2 transition duration-150 ease-in-out text-slate-600 hover:text-slate-900">
                         <i data-lucide="cloud-upload" class="w-4 h-4"></i>
                         <span>上传数据</span>
                     </button>
@@ -389,6 +390,26 @@
             <p class="text-xs text-slate-400">A-Share Market Review App • Powered by Cloudflare D1 & Hono</p>
         </div>
     </footer>
+
+    <!-- ==================== MOBILE NAVIGATION BAR (NEW) ==================== -->
+    <nav class="flex md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200 py-1.5 px-4 justify-around items-center z-50 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]" aria-label="Mobile Navigation">
+        <button data-tab="search" class="flex flex-col items-center space-y-0.5 text-slate-600 hover:text-red-500 transition py-1 px-3 rounded-lg text-red-500 font-bold">
+            <i data-lucide="search" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold">个股</span>
+        </button>
+        <button data-tab="review" class="flex flex-col items-center space-y-0.5 text-slate-600 hover:text-red-500 transition py-1 px-3 rounded-lg">
+            <i data-lucide="calendar" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold">复盘</span>
+        </button>
+        <button data-tab="active" class="flex flex-col items-center space-y-0.5 text-slate-600 hover:text-red-500 transition py-1 px-3 rounded-lg">
+            <i data-lucide="award" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold">活跃</span>
+        </button>
+        <button data-tab="upload" class="flex flex-col items-center space-y-0.5 text-slate-600 hover:text-red-500 transition py-1 px-3 rounded-lg">
+            <i data-lucide="cloud-upload" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold">上传</span>
+        </button>
+    </nav>
 
     <script type="module" src="/js/app.js"></script>
 </body>
