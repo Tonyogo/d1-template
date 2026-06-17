@@ -82,7 +82,11 @@ class App {
                 if (isDesktop) {
                     // 桌面端激活样式
                     btn.className = "px-4 py-2 text-sm font-semibold rounded-lg flex items-center space-x-2 transition duration-150 ease-in-out bg-white text-slate-900 shadow-sm";
-                    btn.querySelector('i').className = "w-4 h-4 text-red-500";
+
+                    const icon = btn.querySelector('i, svg');
+                    if (icon) {
+                        icon.setAttribute('class', 'w-4 h-4 text-red-500');
+                    }
                 } else {
                     // 移动端激活样式
                     btn.className = "flex flex-col items-center space-y-0.5 text-red-500 font-bold transition py-1 px-3 rounded-lg";
@@ -91,7 +95,11 @@ class App {
                 if (isDesktop) {
                     // 桌面端非激活样式
                     btn.className = "px-4 py-2 text-sm font-semibold rounded-lg flex items-center space-x-2 transition duration-150 ease-in-out text-slate-600 hover:text-slate-900";
-                    btn.querySelector('i').className = "w-4 h-4 text-slate-400";
+
+                    const icon = btn.querySelector('i, svg');
+                    if (icon) {
+                        icon.setAttribute('class', 'w-4 h-4 text-slate-400');
+                    }
                 } else {
                     // 移动端非激活样式
                     btn.className = "flex flex-col items-center space-y-0.5 text-slate-500 transition py-1 px-3 rounded-lg";
