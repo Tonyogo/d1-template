@@ -177,20 +177,26 @@ export class SearchTab {
                     stock.history.forEach(item => {
                         const statusStyle = this.app.getStatusBadgeStyle(item.status);
                         historyRows += `
-                            <tr class="hover:bg-slate-50/50 transition-colors">
-                                <td class="px-6 py-3 text-sm whitespace-nowrap text-slate-700 font-semibold font-mono hover:text-red-500 cursor-pointer" date-link="${item.date}">${item.date}</td>
-                                <td class="px-6 py-3 text-sm whitespace-nowrap">
+                            <tr class="flex flex-col md:table-row hover:bg-slate-50/50 transition-colors border-b border-slate-100 last:border-b-0 md:border-b-0">
+                                <td class="px-4 pt-3 pb-1 md:px-6 md:py-3 text-sm text-slate-700 font-semibold font-mono flex justify-between items-center md:table-cell whitespace-nowrap">
+                                    <span class="hover:text-red-500 cursor-pointer" date-link="${item.date}">${item.date}</span>
+                                    <span class="text-sm text-slate-500 font-mono md:hidden">${item.time || '--:--'}</span>
+                                </td>
+                                <td class="px-4 py-1 md:px-6 md:py-3 text-sm whitespace-nowrap flex items-center space-x-2 md:table-cell">
                                     <span class="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-semibold ${statusStyle}">
                                         ${item.status || '涨停'}
                                     </span>
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100 hover:text-red-500 cursor-pointer md:hidden" sector-link="${item.sector_name || '其他概念'}">
+                                        ${item.sector_name || '其他概念'}
+                                    </span>
                                 </td>
-                                <td class="px-6 py-3 text-sm text-slate-500 font-mono whitespace-nowrap">${item.time || '--:--'}</td>
-                                <td class="px-6 py-3 text-sm whitespace-nowrap hover:text-red-500 cursor-pointer" sector-link="${item.sector_name || '其他概念'}">
+                                <td class="hidden md:table-cell px-6 py-3 text-sm text-slate-500 font-mono whitespace-nowrap">${item.time || '--:--'}</td>
+                                <td class="hidden md:table-cell px-6 py-3 text-sm whitespace-nowrap hover:text-red-500 cursor-pointer" sector-link="${item.sector_name || '其他概念'}">
                                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">
                                         ${item.sector_name || '其他概念'}
                                     </span>
                                 </td>
-                                <td class="px-6 py-3 text-sm text-slate-600 max-w-sm truncate" title="${item.concept_reason || ''}">${item.concept_reason || '--'}</td>
+                                <td class="px-4 py-2.5 text-sm text-slate-600 bg-slate-50 rounded-lg mx-4 mb-3 md:mx-0 md:mb-0 md:bg-transparent md:px-6 md:py-3 md:table-cell md:max-w-sm md:truncate" title="${item.concept_reason || ''}">${item.concept_reason || '--'}</td>
                             </tr>
                         `;
                     });
@@ -218,7 +224,7 @@ export class SearchTab {
                         </button>
                         <div class="stock-collapse hidden border-t border-slate-100 overflow-x-auto bg-slate-50/30">
                             <table class="min-w-full divide-y divide-slate-100">
-                                <thead class="bg-slate-50/50">
+                                <thead class="bg-slate-50/50 hidden md:table-header-group">
                                     <tr>
                                         <th scope="col" class="px-6 py-2.5 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">日期</th>
                                         <th scope="col" class="px-6 py-2.5 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">板式/状态</th>

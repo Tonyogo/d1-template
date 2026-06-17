@@ -88,16 +88,20 @@ export class ReviewTab {
             sector.stocks.forEach(stock => {
                 const statusStyle = this.app.getStatusBadgeStyle(stock.status);
                 stockRows += `
-                    <tr class="hover:bg-slate-50/50 transition-colors">
-                        <td class="px-6 py-3 text-sm whitespace-nowrap">
+                    <tr class="flex flex-col md:table-row hover:bg-slate-50/50 transition-colors border-b border-slate-100 last:border-b-0 md:border-b-0">
+                        <td class="px-4 pt-3 pb-1 md:px-6 md:py-3 text-sm whitespace-nowrap flex justify-between items-center md:table-cell">
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-semibold ${statusStyle}">
                                 ${stock.status || '涨停'}
                             </span>
+                            <span class="text-sm text-slate-500 font-mono md:hidden">${stock.time || '--:--'}</span>
                         </td>
-                        <td class="px-6 py-3 text-sm text-slate-500 font-mono whitespace-nowrap">${stock.code}</td>
-                        <td class="px-6 py-3 text-sm font-bold text-slate-900 whitespace-nowrap hover:text-red-500 cursor-pointer" stock-link="${stock.name}">${stock.name}</td>
-                        <td class="px-6 py-3 text-sm text-slate-500 font-mono whitespace-nowrap">${stock.time || '--:--'}</td>
-                        <td class="px-6 py-3 text-sm text-slate-600">${stock.concept_reason || '--'}</td>
+                        <td class="hidden md:table-cell px-6 py-3 text-sm text-slate-500 font-mono whitespace-nowrap">${stock.code}</td>
+                        <td class="px-4 py-1 md:px-6 md:py-3 text-sm text-slate-900 whitespace-nowrap hover:text-red-500 cursor-pointer flex items-baseline space-x-2 md:table-cell" stock-link="${stock.name}">
+                            <span class="text-base font-bold md:text-sm md:font-bold">${stock.name}</span>
+                            <span class="text-xs text-slate-400 font-mono font-medium md:hidden">${stock.code}</span>
+                        </td>
+                        <td class="hidden md:table-cell px-6 py-3 text-sm text-slate-500 font-mono whitespace-nowrap">${stock.time || '--:--'}</td>
+                        <td class="px-4 py-2.5 text-sm text-slate-600 bg-slate-50 rounded-lg mx-4 mb-3 md:mx-0 md:mb-0 md:bg-transparent md:px-6 md:py-3 md:table-cell">${stock.concept_reason || '--'}</td>
                     </tr>
                 `;
             });
@@ -118,7 +122,7 @@ export class ReviewTab {
                 </button>
                 <div class="sector-collapse hidden border-t border-slate-100 overflow-x-auto">
                     <table class="min-w-full divide-y divide-slate-100">
-                        <thead class="bg-slate-50/50">
+                        <thead class="bg-slate-50/50 hidden md:table-header-group">
                             <tr>
                                 <th scope="col" class="px-6 py-2.5 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">板式</th>
                                 <th scope="col" class="px-6 py-2.5 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">代码</th>
