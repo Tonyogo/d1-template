@@ -16,5 +16,8 @@ export const api = {
     getActiveSectors: (days) => fetch(`/api/active-sectors?days=${days}`).then(r => r.json()),
     uploadImage: (formData) => fetch('/api/upload', { method: 'POST', body: formData }).then(r => r.json()),
     batchUpload: (formData) => fetch('/api/batch/upload', { method: 'POST', body: formData }).then(r => r.json()),
-    batchProcess: (payload) => fetch('/api/batch/process', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }).then(r => r.json())
+    batchProcess: (payload) => fetch('/api/batch/process', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }).then(r => r.json()),
+    listPendingImages: () => fetch('/api/pending-images').then(r => r.json()),
+    processPendingImage: (key, date) => fetch('/api/batch/process', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key, date }) }).then(r => r.json()),
+    deletePendingImage: (key) => fetch('/api/pending-image', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key }) }).then(r => r.json())
 };

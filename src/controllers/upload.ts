@@ -85,6 +85,36 @@ export async function listPendingImages(c: Context) {
 	}
 }
 
+export async function deletePendingImage(c: Context) {
+	try {
+		const body = await c.req.json();
+		const key = body?.key as string;
+
+		if (!key) {
+			return c.json({ error: "Missing key parameter" }, 400);
+		}
+
+		if (!key.startsWith("images/pending/")) {
+			return c.json({ error: "Invalid stashed image key pattern" }, 400);
+		}
+
+		const db = c.env.DB;
+		const uploadService = new UploadService(
+			new SummaryRepository(db),
+			new SectorRepository(db),
+			new StockRepository(db),
+			c.env,
+			c.env.BUCKET || null
+		);
+
+		const result = await uploadService.deletePendingImage(key);
+		return c.json(result);
+	} catch (error: any) {
+		console.error("Error inside deletePendingImage controller:", error);
+		return c.json({ error: "Internal Server Error during pending image deletion", message: error.message }, 500);
+	}
+}
+
 export async function batchProcess(c: Context) {
 	if (!c.env.GEMINI_API_KEY) {
 		return c.json({ error: "GEMINI_API_KEY is not configured. Please set it in your environment." }, 400);

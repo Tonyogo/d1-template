@@ -6,6 +6,16 @@ import { OcrParser } from '../utils/ocr-parser';
 import { Env } from '../types';
 
 export class UploadService {
+	async deletePendingImage(key: string): Promise<{ success: boolean }> {
+		if (!this.r2Bucket) {
+			throw new Error("R2 bucket is not configured");
+		}
+		if (!key.startsWith("images/pending/")) {
+			throw new Error("Invalid stashed image key pattern");
+		}
+		await this.r2Bucket.delete(key);
+		return { success: true };
+	}
 	constructor(
 		private summaryRepo: SummaryRepository,
 		private sectorRepo: SectorRepository,

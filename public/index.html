@@ -251,6 +251,46 @@
                 </div>
             </div>
 
+            <!-- ==================== STASHED PENDING CONSOLE PANEL ==================== -->
+            <div id="pending-console-container" class="hidden bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                    <div>
+                        <h3 class="text-base font-bold text-slate-900 flex items-center space-x-2">
+                            <i data-lucide="list-todo" class="w-5 h-5 text-red-500"></i>
+                            <span>待处理暂存队列 (云端 R2)</span>
+                        </h3>
+                        <p class="text-xs text-slate-500 mt-1">这里列出已批量上传至 R2 暂存区的复盘长图，点击单项解析或一键顺序处理正式入库。</p>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <button id="pending-refresh-btn" class="px-3 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-600 hover:text-slate-900 rounded-lg text-xs font-semibold shadow-sm transition duration-150 flex items-center space-x-1.5">
+                            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+                            <span>刷新列表</span>
+                        </button>
+                        <button id="pending-process-all-btn" class="px-4 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg text-xs font-bold shadow-sm transition duration-150 flex items-center space-x-1.5">
+                            <i data-lucide="play" class="w-3.5 h-3.5"></i>
+                            <span>一键顺序处理</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-slate-100 text-sm">
+                        <thead class="bg-slate-50/75 text-slate-500 font-semibold text-xs uppercase tracking-wider text-left">
+                            <tr>
+                                <th class="px-4 py-3 rounded-l-xl w-24">缩略图</th>
+                                <th class="px-4 py-3">原始文件名 / 上传时间</th>
+                                <th class="px-4 py-3 w-48">目标日期 (智能建议)</th>
+                                <th class="px-4 py-3 w-28">大小</th>
+                                <th class="px-4 py-3 rounded-r-xl text-right w-44">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pending-tbody" class="divide-y divide-slate-100 text-slate-700">
+                            <!-- 动态插入任务行 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
             <!-- ==================== BATCH CONSOLE PANEL ==================== -->
             <div id="batch-console-container" class="hidden bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
@@ -410,6 +450,43 @@
             <span class="text-[10px] font-bold">上传</span>
         </button>
     </nav>
+
+    <!-- ==================== IMAGE PREVIEW MODAL ==================== -->
+    <div id="preview-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md transition-opacity duration-300 opacity-0">
+        <div class="relative max-w-4xl w-full max-h-[90vh] bg-white rounded-2xl overflow-hidden shadow-2xl flex flex-col transform scale-95 transition-transform duration-300">
+            <!-- Modal Header -->
+            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                <div>
+                    <h3 id="modal-title" class="text-sm font-bold text-slate-900">图片预览</h3>
+                    <p id="modal-subtitle" class="text-xxs text-slate-400 mt-0.5">支持高清晰度原图展示</p>
+                </div>
+                <button id="modal-close-btn" class="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <!-- Modal Content (Zoomable Image) -->
+            <div class="flex-grow overflow-auto p-6 bg-slate-50 flex justify-center items-center min-h-[300px]">
+                <div class="relative group overflow-hidden max-w-full max-h-[60vh] rounded-lg shadow-sm border border-slate-200 bg-white flex items-center justify-center">
+                    <img id="modal-image" src="" alt="预览图" class="max-w-full max-h-[60vh] object-contain transition-transform duration-200 origin-center" />
+                </div>
+            </div>
+            <!-- Modal Footer / Controls -->
+            <div class="px-6 py-3 border-t border-slate-100 bg-slate-50/50 flex justify-between items-center">
+                <span class="text-xxs text-slate-400">点击按钮或使用滑块进行图片细节缩放</span>
+                <div class="flex items-center space-x-2">
+                    <button id="modal-zoom-out-btn" class="p-1.5 border border-slate-200 hover:bg-slate-100 rounded-lg text-slate-600 transition">
+                        <i data-lucide="zoom-out" class="w-4 h-4"></i>
+                    </button>
+                    <button id="modal-zoom-reset-btn" class="px-2.5 py-1 border border-slate-200 hover:bg-slate-100 rounded-lg text-xxs font-semibold text-slate-600 transition">
+                        100%
+                    </button>
+                    <button id="modal-zoom-in-btn" class="p-1.5 border border-slate-200 hover:bg-slate-100 rounded-lg text-slate-600 transition">
+                        <i data-lucide="zoom-in" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script type="module" src="/js/app.js"></script>
 </body>

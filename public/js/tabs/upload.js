@@ -4,6 +4,7 @@ export class UploadTab {
     constructor(app) {
         this.app = app;
         this.initDOM();
+        this.loadPendingQueue();
     }
 
     initDOM() {
@@ -35,8 +36,25 @@ export class UploadTab {
         this.batchStartBtn = document.getElementById('batch-start-btn');
         this.batchTbody = document.getElementById('batch-tbody');
 
+        // 暂存控制台 DOM 节点
+        this.pendingConsoleContainer = document.getElementById('pending-console-container');
+        this.pendingRefreshBtn = document.getElementById('pending-refresh-btn');
+        this.pendingProcessAllBtn = document.getElementById('pending-process-all-btn');
+        this.pendingTbody = document.getElementById('pending-tbody');
+
+        // 图片预览 Modal 节点
+        this.previewModal = document.getElementById('preview-modal');
+        this.modalTitle = document.getElementById('modal-title');
+        this.modalSubtitle = document.getElementById('modal-subtitle');
+        this.modalCloseBtn = document.getElementById('modal-close-btn');
+        this.modalImage = document.getElementById('modal-image');
+        this.modalZoomOutBtn = document.getElementById('modal-zoom-out-btn');
+        this.modalZoomResetBtn = document.getElementById('modal-zoom-reset-btn');
+        this.modalZoomInBtn = document.getElementById('modal-zoom-in-btn');
+
         this.batchQueue = [];
         this.isProcessing = false;
+        this.zoomLevel = 1.0;
 
         // 初始化默认日期 (当天)
         this.dateInput.value = this.getTodayDateString();
@@ -74,6 +92,22 @@ export class UploadTab {
 
         this.batchClearBtn.addEventListener('click', () => this.clearBatchQueue());
         this.batchStartBtn.addEventListener('click', () => this.startBatchPipeline());
+
+        // 暂存队列监听器绑定
+        this.pendingRefreshBtn.addEventListener('click', () => this.loadPendingQueue());
+        this.pendingProcessAllBtn.addEventListener('click', () => this.processAllPending());
+
+        // Modal 监听器绑定
+        this.modalCloseBtn.addEventListener('click', () => this.closePreviewModal());
+        this.modalZoomInBtn.addEventListener('click', () => this.zoomImage(0.2));
+        this.modalZoomOutBtn.addEventListener('click', () => this.zoomImage(-0.2));
+        this.modalZoomResetBtn.addEventListener('click', () => this.resetZoomImage());
+
+        this.previewModal.addEventListener('click', (e) => {
+            if (e.target === this.previewModal) {
+                this.closePreviewModal();
+            }
+        });
     }
 
     getTodayDateString() {
@@ -596,5 +630,429 @@ export class UploadTab {
         if (iconSave) iconSave.setAttribute('data-lucide', 'database');
 
         lucide.createIcons();
+
+        // 联动刷新暂存队列
+        this.loadPendingQueue();
+    }
+
+    async loadPendingQueue() {
+        if (this.isProcessing) return;
+
+        try {
+            this.pendingTbody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="text-center py-8 text-slate-400">
+                        <div class="flex flex-col items-center justify-center space-y-2">
+                            <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-red-500"></div>
+                            <span class="text-xs">正在加载暂存队列...</span>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            lucide.createIcons();
+
+            const pendingImages = await api.listPendingImages();
+
+            if (pendingImages.error) {
+                throw new Error(pendingImages.error);
+            }
+
+            if (!pendingImages || pendingImages.length === 0) {
+                this.pendingConsoleContainer.classList.add('hidden');
+                return;
+            }
+
+            this.pendingConsoleContainer.classList.remove('hidden');
+            this.pendingTbody.innerHTML = '';
+
+            pendingImages.forEach((img) => {
+                const tr = this.renderPendingRow(img);
+                this.pendingTbody.appendChild(tr);
+            });
+
+            lucide.createIcons();
+        } catch (err) {
+            console.error('Failed to load pending queue:', err);
+            this.pendingTbody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="text-center py-8 text-red-500 font-semibold text-xs">
+                        加载暂存队列失败: ${err.message || err}
+                    </td>
+                </tr>
+            `;
+            lucide.createIcons();
+        }
+    }
+
+    renderPendingRow(img) {
+        const tr = document.createElement('tr');
+        tr.id = `pending-row-${img.key.replace(/[\/.]/g, '-')}`;
+        tr.setAttribute('data-key', img.key);
+        tr.className = "hover:bg-slate-50/50 transition duration-150";
+
+        // 1. 缩略图
+        const tdThumb = document.createElement('td');
+        tdThumb.className = "px-4 py-3";
+        const thumbDiv = document.createElement('div');
+        thumbDiv.className = "w-12 h-12 rounded overflow-hidden border border-slate-200 cursor-zoom-in bg-slate-100 flex items-center justify-center transition hover:opacity-80";
+
+        const thumbImg = document.createElement('img');
+        thumbImg.src = `/api/pending-image?key=${encodeURIComponent(img.key)}`;
+        thumbImg.className = "w-full h-full object-cover";
+
+        thumbDiv.addEventListener('click', () => {
+            this.openPreviewModal(img.key, img.originalName);
+        });
+
+        thumbDiv.appendChild(thumbImg);
+        tdThumb.appendChild(thumbDiv);
+        tr.appendChild(tdThumb);
+
+        // 2. 原始文件名 / 上传时间
+        const tdInfo = document.createElement('td');
+        tdInfo.className = "px-4 py-3";
+
+        const nameDiv = document.createElement('div');
+        nameDiv.className = "text-sm font-semibold text-slate-800 max-w-xs truncate";
+        nameDiv.textContent = img.originalName;
+        nameDiv.title = img.originalName;
+
+        const dateDiv = document.createElement('div');
+        dateDiv.className = "text-xxs text-slate-400 mt-0.5";
+        const formattedTime = new Date(img.uploadedAt).toLocaleString('zh-CN');
+        dateDiv.textContent = `上传时间: ${formattedTime}`;
+
+        tdInfo.appendChild(nameDiv);
+        tdInfo.appendChild(dateDiv);
+        tr.appendChild(tdInfo);
+
+        // 3. 目标日期日期选择器
+        const tdPicker = document.createElement('td');
+        tdPicker.className = "px-4 py-3";
+
+        const dateInput = document.createElement('input');
+        dateInput.type = 'date';
+        dateInput.className = "px-2 py-1 border border-slate-300 rounded-lg text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-slate-50 text-slate-900";
+        dateInput.value = img.suggestedDate || this.getTodayDateString();
+
+        tdPicker.appendChild(dateInput);
+        tr.appendChild(tdPicker);
+
+        // 4. 文件大小
+        const tdSize = document.createElement('td');
+        tdSize.className = "px-4 py-3 text-xs text-slate-500";
+        tdSize.textContent = this.formatFileSize(img.size);
+        tr.appendChild(tdSize);
+
+        // 5. 单项解析与删除操作按钮
+        const tdAction = document.createElement('td');
+        tdAction.className = "px-4 py-3 text-right space-x-2";
+
+        const processBtn = document.createElement('button');
+        processBtn.className = "px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded-lg text-xs font-bold shadow-sm transition duration-150 inline-flex items-center space-x-1";
+        processBtn.innerHTML = `<i data-lucide="play" class="w-3.5 h-3.5"></i> <span>解析入库</span>`;
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = "px-2.5 py-1 border border-slate-200 hover:bg-slate-50 text-slate-500 hover:text-red-500 rounded-lg text-xs font-semibold transition duration-150 inline-flex items-center";
+        deleteBtn.innerHTML = `<i data-lucide="trash-2" class="w-3.5 h-3.5"></i>`;
+
+        processBtn.addEventListener('click', async () => {
+            const dateVal = dateInput.value;
+            if (!this.isValidDate(dateVal)) {
+                alert('请选择或输入有效的复盘日期！');
+                return;
+            }
+            await this.processSinglePendingItem(img.key, dateVal, tr, processBtn, deleteBtn);
+        });
+
+        deleteBtn.addEventListener('click', async () => {
+            if (confirm(`确定要丢弃该暂存文件吗？\n文件名: ${img.originalName}`)) {
+                await this.deleteSinglePendingItem(img.key, tr, processBtn, deleteBtn);
+            }
+        });
+
+        tdAction.appendChild(processBtn);
+        tdAction.appendChild(deleteBtn);
+        tr.appendChild(tdAction);
+
+        return tr;
+    }
+
+    async processSinglePendingItem(key, date, rowElement, processBtn, deleteBtn) {
+        if (this.isProcessing) return;
+        this.isProcessing = true;
+        this.togglePendingControls(false);
+
+        processBtn.disabled = true;
+        deleteBtn.disabled = true;
+        const picker = rowElement.querySelector('input[type="date"]');
+        if (picker) picker.disabled = true;
+
+        const originalBtnHTML = processBtn.innerHTML;
+        processBtn.className = "px-3 py-1 bg-red-400 text-white rounded-lg text-xs font-bold shadow-sm inline-flex items-center space-x-1 cursor-not-allowed";
+        processBtn.innerHTML = `<div class="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div> <span>解析中...</span>`;
+
+        rowElement.classList.add('bg-blue-50/30');
+
+        try {
+            const data = await api.processPendingImage(key, date);
+            if (data.error) {
+                throw new Error(data.message || data.error);
+            }
+
+            rowElement.classList.remove('bg-blue-50/30');
+            rowElement.classList.add('bg-emerald-50/30');
+            processBtn.className = "px-3 py-1 bg-emerald-500 text-white rounded-lg text-xs font-bold shadow-sm inline-flex items-center space-x-1";
+            processBtn.innerHTML = `<i data-lucide="check" class="w-3.5 h-3.5"></i> <span>解析成功</span>`;
+            lucide.createIcons();
+
+            this.statStocks.innerHTML = `${data.stocksCount || 0} <span class="text-xs font-medium text-slate-500">只</span>`;
+            this.statSectors.innerHTML = `${data.sectorsCount || 0} <span class="text-xs font-medium text-slate-500">个</span>`;
+            this.statUpgrade.textContent = data.summary.upgrade_rate !== null ? `${data.summary.upgrade_rate}%` : '--%';
+            this.statBidding.textContent = data.summary.bidding_increase_rate !== null ? `${data.summary.bidding_increase_rate}%` : '--%';
+            this.statBroken.textContent = data.summary.limit_broken_rate !== null ? `${data.summary.limit_broken_rate}%` : '--%';
+            this.rawMarkdownPre.textContent = data.rawMarkdown || '无原始 Markdown 识别内容';
+
+            this.statusBox.classList.remove('hidden');
+
+            await this.app.reloadSummaries();
+            document.getElementById('date-select').value = date;
+
+            setTimeout(() => {
+                rowElement.classList.add('transition-opacity', 'duration-500', 'opacity-0');
+                setTimeout(() => {
+                    rowElement.remove();
+                    if (this.pendingTbody.children.length === 0) {
+                        this.pendingConsoleContainer.classList.add('hidden');
+                    }
+                }, 500);
+            }, 1200);
+
+        } catch (err) {
+            console.error('Failed to process pending item:', err);
+            alert(`处理失败: ${err.message || err}`);
+
+            rowElement.classList.remove('bg-blue-50/30');
+            rowElement.classList.add('bg-red-50/30');
+            processBtn.disabled = false;
+            deleteBtn.disabled = false;
+            if (picker) picker.disabled = false;
+            processBtn.className = "px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded-lg text-xs font-bold shadow-sm transition duration-150 inline-flex items-center space-x-1";
+            processBtn.innerHTML = originalBtnHTML;
+            lucide.createIcons();
+        } finally {
+            this.isProcessing = false;
+            this.togglePendingControls(true);
+        }
+    }
+
+    async deleteSinglePendingItem(key, rowElement, processBtn, deleteBtn) {
+        if (this.isProcessing) return;
+        this.isProcessing = true;
+        this.togglePendingControls(false);
+
+        processBtn.disabled = true;
+        deleteBtn.disabled = true;
+        const picker = rowElement.querySelector('input[type="date"]');
+        if (picker) picker.disabled = true;
+
+        deleteBtn.innerHTML = `<div class="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-slate-500"></div>`;
+        rowElement.classList.add('bg-red-50/10');
+
+        try {
+            const data = await api.deletePendingImage(key);
+            if (data.error) {
+                throw new Error(data.message || data.error);
+            }
+
+            rowElement.classList.remove('bg-red-50/10');
+            rowElement.classList.add('bg-slate-100', 'opacity-50');
+
+            setTimeout(() => {
+                rowElement.classList.add('transition-opacity', 'duration-500', 'opacity-0');
+                setTimeout(() => {
+                    rowElement.remove();
+                    if (this.pendingTbody.children.length === 0) {
+                        this.pendingConsoleContainer.classList.add('hidden');
+                    }
+                }, 500);
+            }, 500);
+
+        } catch (err) {
+            console.error('Failed to discard pending item:', err);
+            alert(`删除失败: ${err.message || err}`);
+
+            rowElement.classList.remove('bg-red-50/10');
+            processBtn.disabled = false;
+            deleteBtn.disabled = false;
+            if (picker) picker.disabled = false;
+            deleteBtn.innerHTML = `<i data-lucide="trash-2" class="w-3.5 h-3.5"></i>`;
+            lucide.createIcons();
+        } finally {
+            this.isProcessing = false;
+            this.togglePendingControls(true);
+        }
+    }
+
+    async processAllPending() {
+        if (this.isProcessing) return;
+
+        const rows = Array.from(this.pendingTbody.querySelectorAll('tr[id^="pending-row-"]'));
+        if (rows.length === 0) {
+            alert('当前队列中没有暂存任务！');
+            return;
+        }
+
+        if (!confirm(`确定要开始一键顺序处理当前队列中的所有 ${rows.length} 张图片吗？\n将按顺序单线程进行 OCR 解析，请耐心等待。`)) {
+            return;
+        }
+
+        this.isProcessing = true;
+        this.togglePendingControls(false);
+
+        let successCount = 0;
+        let failCount = 0;
+
+        try {
+            for (const row of rows) {
+                const picker = row.querySelector('input[type="date"]');
+                const processBtn = row.querySelector('button.bg-red-500');
+                const deleteBtn = row.querySelector('button.text-slate-500');
+
+                if (!processBtn || !deleteBtn || !picker) continue;
+                if (processBtn.disabled) continue;
+
+                const key = row.getAttribute('data-key');
+                const date = picker.value;
+
+                if (!this.isValidDate(date)) {
+                    row.classList.add('bg-red-50/30');
+                    failCount++;
+                    continue;
+                }
+
+                processBtn.disabled = true;
+                deleteBtn.disabled = true;
+                picker.disabled = true;
+
+                const originalBtnHTML = processBtn.innerHTML;
+                processBtn.className = "px-3 py-1 bg-red-400 text-white rounded-lg text-xs font-bold shadow-sm inline-flex items-center space-x-1 cursor-not-allowed";
+                processBtn.innerHTML = `<div class="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div> <span>解析中...</span>`;
+                row.className = "bg-blue-50/30 transition duration-150";
+
+                try {
+                    const data = await api.processPendingImage(key, date);
+                    if (data.error) {
+                        throw new Error(data.message || data.error);
+                    }
+
+                    row.className = "bg-emerald-50/30 transition duration-150";
+                    processBtn.className = "px-3 py-1 bg-emerald-500 text-white rounded-lg text-xs font-bold shadow-sm inline-flex items-center space-x-1";
+                    processBtn.innerHTML = `<i data-lucide="check" class="w-3.5 h-3.5"></i> <span>解析成功</span>`;
+                    lucide.createIcons();
+
+                    this.statStocks.innerHTML = `${data.stocksCount || 0} <span class="text-xs font-medium text-slate-500">只</span>`;
+                    this.statSectors.innerHTML = `${data.sectorsCount || 0} <span class="text-xs font-medium text-slate-500">个</span>`;
+                    this.statUpgrade.textContent = data.summary.upgrade_rate !== null ? `${data.summary.upgrade_rate}%` : '--%';
+                    this.statBidding.textContent = data.summary.bidding_increase_rate !== null ? `${data.summary.bidding_increase_rate}%` : '--%';
+                    this.statBroken.textContent = data.summary.limit_broken_rate !== null ? `${data.summary.limit_broken_rate}%` : '--%';
+                    this.rawMarkdownPre.textContent = data.rawMarkdown || '无原始 Markdown 识别内容';
+                    this.statusBox.classList.remove('hidden');
+
+                    successCount++;
+
+                    setTimeout(() => {
+                        row.classList.add('transition-opacity', 'duration-500', 'opacity-0');
+                        setTimeout(() => {
+                            row.remove();
+                            if (this.pendingTbody.children.length === 0) {
+                                this.pendingConsoleContainer.classList.add('hidden');
+                            }
+                        }, 500);
+                    }, 1200);
+
+                } catch (err) {
+                    console.error('Failed processing item in loop:', err);
+                    row.className = "bg-red-50/30 transition duration-150";
+                    processBtn.disabled = false;
+                    deleteBtn.disabled = false;
+                    picker.disabled = false;
+                    processBtn.className = "px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded-lg text-xs font-bold shadow-sm transition duration-150 inline-flex items-center space-x-1";
+                    processBtn.innerHTML = originalBtnHTML;
+                    lucide.createIcons();
+                    failCount++;
+                }
+
+                await new Promise(resolve => setTimeout(resolve, 800));
+            }
+
+            await this.app.reloadSummaries();
+            alert(`一键顺序处理完成！\n成功：${successCount} 个\n失败：${failCount} 个`);
+        } catch (err) {
+            console.error('Error during one-key processing loop:', err);
+            alert(`批量顺序处理出现异常: ${err.message || err}`);
+        } finally {
+            this.isProcessing = false;
+            this.togglePendingControls(true);
+        }
+    }
+
+    togglePendingControls(enabled) {
+        this.dropZone.style.pointerEvents = enabled ? 'auto' : 'none';
+        if (enabled) {
+            this.dropZone.classList.remove('opacity-50');
+            this.pendingRefreshBtn.removeAttribute('disabled');
+            this.pendingRefreshBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            this.pendingProcessAllBtn.removeAttribute('disabled');
+            this.pendingProcessAllBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        } else {
+            this.dropZone.classList.add('opacity-50');
+            this.pendingRefreshBtn.setAttribute('disabled', 'true');
+            this.pendingRefreshBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            this.pendingProcessAllBtn.setAttribute('disabled', 'true');
+            this.pendingProcessAllBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        }
+    }
+
+    openPreviewModal(key, title) {
+        this.modalTitle.textContent = title;
+        this.modalSubtitle.textContent = `暂存 Key: ${key}`;
+        this.modalImage.src = `/api/pending-image?key=${encodeURIComponent(key)}`;
+
+        this.resetZoomImage();
+
+        this.previewModal.classList.remove('hidden');
+        setTimeout(() => {
+            this.previewModal.classList.remove('opacity-0');
+            const card = this.previewModal.querySelector('.relative.max-w-4xl');
+            if (card) card.classList.remove('scale-95');
+        }, 50);
+        lucide.createIcons();
+    }
+
+    closePreviewModal() {
+        this.previewModal.classList.add('opacity-0');
+        const card = this.previewModal.querySelector('.relative.max-w-4xl');
+        if (card) card.classList.add('scale-95');
+
+        setTimeout(() => {
+            this.previewModal.classList.add('hidden');
+            this.modalImage.src = '';
+        }, 300);
+    }
+
+    zoomImage(delta) {
+        this.zoomLevel = Math.max(0.4, Math.min(3.0, this.zoomLevel + delta));
+        this.applyZoom();
+    }
+
+    resetZoomImage() {
+        this.zoomLevel = 1.0;
+        this.applyZoom();
+    }
+
+    applyZoom() {
+        this.modalImage.style.transform = `scale(${this.zoomLevel})`;
+        this.modalZoomResetBtn.textContent = `${Math.round(this.zoomLevel * 100)}%`;
     }
 }
