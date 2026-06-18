@@ -83,15 +83,15 @@ export class UploadTab {
     }
 
     initProxyDOM() {
-        this.proxyToggle = document.getElementById('proxy-settings-toggle');
-        this.proxyCollapse = document.getElementById('proxy-settings-collapse');
-        this.proxyChevron = document.getElementById('proxy-chevron');
+        this.proxyToggle = document.getElementById('local-proxy-settings-toggle');
+        this.proxyCollapse = document.getElementById('local-proxy-settings-content');
+        this.proxyChevron = document.getElementById('local-proxy-settings-chevron');
 
-        this.inpEnabled = document.getElementById('proxy-enabled');
-        this.inpType = document.getElementById('proxy-api-type');
-        this.inpBase = document.getElementById('proxy-api-base');
-        this.inpKey = document.getElementById('proxy-api-key');
-        this.inpModel = document.getElementById('proxy-model');
+        this.inpEnabled = document.getElementById('local-proxy-enable');
+        this.inpType = document.getElementById('local-proxy-protocol');
+        this.inpBase = document.getElementById('local-proxy-base');
+        this.inpKey = document.getElementById('local-proxy-key');
+        this.inpModel = document.getElementById('local-proxy-model');
 
         if (!this.proxyToggle) return; // 如果未引入 HTML
 
