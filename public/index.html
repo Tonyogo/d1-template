@@ -290,6 +290,76 @@
                     </table>
                 </div>
             </div>
+
+            <!-- ==================== LOCAL PROXY ADVANCED SETTINGS PANEL ==================== -->
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <!-- Header (Click to collapse/expand) -->
+                <button id="local-proxy-settings-toggle" class="w-full flex items-center justify-between p-6 hover:bg-slate-50 transition duration-150 text-left">
+                    <div class="flex items-center space-x-3">
+                        <div class="p-2 bg-slate-100 rounded-lg text-slate-600">
+                            <i data-lucide="settings" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-base font-bold text-slate-900">高级设置：本地 OCR 中转</h3>
+                            <p class="text-xs text-slate-500 mt-0.5">配置本地大模型或中转服务（如 OneAPI / NewAPI / LlamaEdge / LM Studio），优先进行本地客户端解析。</p>
+                        </div>
+                    </div>
+                    <i id="local-proxy-settings-chevron" data-lucide="chevron-down" class="w-5 h-5 text-slate-400 transition-transform duration-200"></i>
+                </button>
+
+                <!-- Collapsible Content -->
+                <div id="local-proxy-settings-content" class="hidden border-t border-slate-100 p-6 bg-slate-50/30 space-y-5">
+                    <!-- Enable Toggle -->
+                    <div class="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-200 shadow-sm">
+                        <div class="space-y-0.5 pr-4">
+                            <label for="local-proxy-enable" class="text-sm font-bold text-slate-800 cursor-pointer">启用本地中转优先</label>
+                            <p class="text-xs text-slate-400">开启后，点击“解析”将优先通过您的本地浏览器发起 OCR 请求，避免服务器端中转额度消耗并提升网络速度。</p>
+                        </div>
+                        <div class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="local-proxy-enable" class="sr-only peer">
+                            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-500"></div>
+                        </div>
+                    </div>
+
+                    <!-- Input Fields Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <!-- Protocol Select -->
+                        <div class="space-y-1.5">
+                            <label for="local-proxy-protocol" class="text-xs font-bold text-slate-700 flex items-center space-x-1">
+                                <span>接口协议类型</span>
+                                <span class="group relative cursor-pointer text-slate-400 hover:text-slate-600">
+                                    <i data-lucide="info" class="w-3.5 h-3.5"></i>
+                                    <span class="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block w-48 bg-slate-800 text-white text-[10px] p-2 rounded shadow-lg z-20 leading-relaxed">
+                                        Gemini 协议需要 API Key；OpenAI 兼容协议通常为 /v1/chat/completions 形式。
+                                    </span>
+                                </span>
+                            </label>
+                            <select id="local-proxy-protocol" class="w-full text-sm rounded-xl border-slate-200 shadow-sm focus:border-red-500 focus:ring-red-500 bg-white">
+                                <option value="gemini">Google Gemini 协议</option>
+                                <option value="openai">OpenAI / Chat 兼容协议</option>
+                            </select>
+                        </div>
+
+                        <!-- Target Model -->
+                        <div class="space-y-1.5">
+                            <label for="local-proxy-model" class="text-xs font-bold text-slate-700">目标 API 模型 (Model)</label>
+                            <input type="text" id="local-proxy-model" placeholder="例如 gemini-2.5-flash 或 gpt-4o-mini" class="w-full text-sm rounded-xl border-slate-200 shadow-sm focus:border-red-500 focus:ring-red-500">
+                        </div>
+
+                        <!-- API Base Path -->
+                        <div class="space-y-1.5 md:col-span-2">
+                            <label for="local-proxy-base" class="text-xs font-bold text-slate-700">API 接口基础路径 (Base URL)</label>
+                            <input type="text" id="local-proxy-base" placeholder="例如 https://generativelanguage.googleapis.com 或 https://api.openai.com" class="w-full text-sm rounded-xl border-slate-200 shadow-sm focus:border-red-500 focus:ring-red-500">
+                        </div>
+
+                        <!-- API Key -->
+                        <div class="space-y-1.5 md:col-span-2">
+                            <label for="local-proxy-key" class="text-xs font-bold text-slate-700">API 密钥 (API Key - 选填)</label>
+                            <input type="password" id="local-proxy-key" placeholder="您的 API 密钥（将安全地存储在您本地的浏览器 localStorage 中）" class="w-full text-sm rounded-xl border-slate-200 shadow-sm focus:border-red-500 focus:ring-red-500">
+                        </div>
+                    </div>
+                </div>
+            </div>
         </section>
     </main>
 

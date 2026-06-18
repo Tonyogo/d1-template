@@ -4,6 +4,7 @@ export class UploadTab {
     constructor(app) {
         this.app = app;
         this.initDOM();
+        this.initProxyDOM();
         this.loadPendingQueue();
     }
 
@@ -79,6 +80,127 @@ export class UploadTab {
                 this.closePreviewModal();
             }
         });
+    }
+
+    initProxyDOM() {
+        this.proxyToggle = document.getElementById('proxy-settings-toggle');
+        this.proxyCollapse = document.getElementById('proxy-settings-collapse');
+        this.proxyChevron = document.getElementById('proxy-chevron');
+
+        this.inpEnabled = document.getElementById('proxy-enabled');
+        this.inpType = document.getElementById('proxy-api-type');
+        this.inpBase = document.getElementById('proxy-api-base');
+        this.inpKey = document.getElementById('proxy-api-key');
+        this.inpModel = document.getElementById('proxy-model');
+
+        if (!this.proxyToggle) return; // 如果未引入 HTML
+
+        this.proxyToggle.addEventListener('click', () => {
+            this.proxyCollapse.classList.toggle('hidden');
+            this.proxyChevron.classList.toggle('rotate-180');
+        });
+
+        const fields = [
+            { el: this.inpEnabled, key: 'proxy_enabled', prop: 'checked', type: 'bool' },
+            { el: this.inpType, key: 'proxy_api_type', prop: 'value' },
+            { el: this.inpBase, key: 'proxy_api_base', prop: 'value' },
+            { el: this.inpKey, key: 'proxy_api_key', prop: 'value' },
+            { el: this.inpModel, key: 'proxy_model', prop: 'value' }
+        ];
+
+        fields.forEach(f => {
+            const cached = localStorage.getItem(f.key);
+            if (cached !== null) {
+                f.el[f.prop] = f.type === 'bool' ? (cached === 'true') : cached;
+            }
+            f.el.addEventListener('change', () => {
+                const val = f.type === 'bool' ? f.el.checked : f.el.value;
+                localStorage.setItem(f.key, String(val));
+            });
+        });
+    }
+
+    async ocrWithLocalProxy(fileKey, mimeType) {
+        if (!this.inpEnabled) return null;
+
+        const enabled = this.inpEnabled.checked;
+        const apiType = this.inpType.value;
+        let apiBase = this.inpBase.value.trim();
+        const apiKey = this.inpKey.value.trim();
+        const model = this.inpModel.value.trim();
+
+        if (!enabled || !apiBase || !model) return null;
+
+        // Remove trailing slash if present
+        if (apiBase.endsWith('/')) {
+            apiBase = apiBase.slice(0, -1);
+        }
+
+        try {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), 1200);
+            await fetch(`${apiBase}/v1/models` || `${apiBase}`, { method: 'GET', signal: controller.signal }).catch(() => {});
+            clearTimeout(timer);
+        } catch (err) {
+            console.warn("本地中转不可达，自动降级为线上官方：", err);
+            return null;
+        }
+
+        const imgRes = await fetch(`/api/pending-image?key=${encodeURIComponent(fileKey)}`);
+        if (!imgRes.ok) throw new Error("获取暂存图片流失败");
+        const blob = await imgRes.blob();
+        const arrayBuffer = await blob.arrayBuffer();
+        const bytes = new Uint8Array(arrayBuffer);
+        let binary = '';
+        for (let i = 0; i < bytes.byteLength; i++) {
+            binary += String.fromCharCode(bytes[i]);
+        }
+        const base64String = btoa(binary);
+
+        const prompt = "请对输入图片执行以下任务：1. 提取图片中所有可见文字 2. 保持原始阅读顺序 3. 按内容结构转换为 Markdown 4. 只输出最终 Markdown 格式";
+        const systemPrompt = "你是一个专业的 OCR 与文档结构重建引擎。\n你的任务是将图片中的文字内容，严格、完整地转换为 Markdown 文档。";
+
+        if (apiType === 'gemini') {
+            const url = `${apiBase}/v1beta/models/${model}:generateContent?key=${apiKey}`;
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{
+                        parts: [
+                            { inlineData: { data: base64String, mimeType: mimeType || "image/png" } },
+                            { text: prompt }
+                        ]
+                    }],
+                    systemInstruction: { parts: [{ text: systemPrompt }] }
+                })
+            });
+            if (!res.ok) throw new Error(`本地 Gemini 中转请求失败: ${res.status}`);
+            const json = await res.json();
+            return json.candidates[0].content.parts[0].text;
+        } else {
+            const url = `${apiBase}/v1/chat/completions`;
+            const headers = { 'Content-Type': 'application/json' };
+            if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
+
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify({
+                    model: model,
+                    messages: [{
+                        role: "user",
+                        content: [
+                            { type: "text", text: prompt },
+                            { type: "image_url", image_url: { url: `data:${mimeType || 'image/png'};base64,${base64String}` } }
+                        ]
+                    }]
+                })
+            });
+            if (!res.ok) throw new Error(`本地 OpenAI 兼容中转请求失败: ${res.status}`);
+            const json = await res.json();
+            return json.choices[0].message.content;
+        }
     }
 
     getTodayDateString() {
@@ -320,7 +442,21 @@ export class UploadTab {
         rowElement.classList.add('bg-blue-50/30');
 
         try {
-            const data = await api.processPendingImage(key, date);
+            let data;
+            const ext = key.split('.').pop().toLowerCase();
+            const mimeMap = { 'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'webp': 'image/webp', 'png': 'image/png' };
+            const mimeType = mimeMap[ext] || 'image/png';
+
+            const localMarkdown = await this.ocrWithLocalProxy(key, mimeType);
+
+            if (localMarkdown) {
+                console.log("Using decentralized local proxy OCR result.");
+                data = await api.commitParsedMarkdown(key, date, localMarkdown);
+            } else {
+                console.log("Fallback to cloud worker proxy OCR.");
+                data = await api.processPendingImage(key, date);
+            }
+
             if (data.error) {
                 throw new Error(data.message || data.error);
             }
@@ -456,7 +592,21 @@ export class UploadTab {
                 row.className = "bg-blue-50/30 transition duration-150";
 
                 try {
-                    const data = await api.processPendingImage(key, date);
+                    let data;
+                    const ext = key.split('.').pop().toLowerCase();
+                    const mimeMap = { 'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'webp': 'image/webp', 'png': 'image/png' };
+                    const mimeType = mimeMap[ext] || 'image/png';
+
+                    const localMarkdown = await this.ocrWithLocalProxy(key, mimeType);
+
+                    if (localMarkdown) {
+                        console.log("Using decentralized local proxy OCR result.");
+                        data = await api.commitParsedMarkdown(key, date, localMarkdown);
+                    } else {
+                        console.log("Fallback to cloud worker proxy OCR.");
+                        data = await api.processPendingImage(key, date);
+                    }
+
                     if (data.error) {
                         throw new Error(data.message || data.error);
                     }
