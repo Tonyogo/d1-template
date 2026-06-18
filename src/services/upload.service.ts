@@ -155,38 +155,29 @@ export class UploadService {
 		return results.sort((a, b) => b.key.localeCompare(a.key));
 	}
 
-	async processStashedImage(date: string) {
+	async processStashedImage(key: string, date: string) {
 		if (!this.r2Bucket) {
 			throw new Error("R2 bucket is not configured");
 		}
 
-		// 1. Find and fetch R2 stashed image
-		const extensions = ["png", "jpg", "jpeg", "webp"];
-		let pendingObject: any = null;
-		let foundExtension = "";
-
-		for (const ext of extensions) {
-			const obj = await this.r2Bucket.get(`images/pending/${date}.${ext}`);
-			if (obj) {
-				pendingObject = obj;
-				foundExtension = ext;
-				break;
-			}
+		// 1. 获取指定 key 对应的 pending 资源
+		if (!key.startsWith("images/pending/")) {
+			throw new Error("Invalid stashed image key pattern");
 		}
-
+		const pendingObject = await this.r2Bucket.get(key);
 		if (!pendingObject) {
-			throw new Error(`No pending image found for date: ${date}`);
+			throw new Error(`Stashed pending image not found: ${key}`);
 		}
 
 		const mimeType = pendingObject.httpMetadata?.contentType || "image/png";
 		const tempResponse = new Response(pendingObject.body);
 		const imageBlob = await tempResponse.blob();
 
-		// 2. Gemini OCR extraction
+		// 2. Gemini OCR 智能多模态提取
 		const rawMarkdown = await GeminiClient.callGeminiOCR(imageBlob, mimeType, this.env);
 		const { summary, sectorsAndStocks } = OcrParser.parseOcrMarkdown(rawMarkdown);
 
-		// 3. Database cascade write transaction
+		// 3. 多表级联 D1 批量事务写入
 		const db = this.summaryRepo.db;
 		const del1 = db.prepare("DELETE FROM limit_up_stocks WHERE date = ?").bind(date);
 		const del2 = db.prepare("DELETE FROM sectors WHERE date = ?").bind(date);
@@ -241,20 +232,24 @@ export class UploadService {
 			await db.batch(stockStatements);
 		}
 
-		// 4. Archive image and delete pending stashed file
-		const formalKey = `images/${date}.${foundExtension}`;
-		const archiveObject = await this.r2Bucket.get(`images/pending/${date}.${foundExtension}`);
+		// 4. 将图片重命名移动到正式归档目录，并彻底安全删除 images/pending/ 下的原图
+		const fileExtension = key.split('.').pop() || 'png';
+		const formalKey = `images/${date}.${fileExtension}`;
+
+		// 再次取得 pending 对象的只读 Body 并推送到正式归档
+		const archiveObject = await this.r2Bucket.get(key);
 		if (archiveObject) {
 			await this.r2Bucket.put(formalKey, archiveObject.body, {
 				httpMetadata: {
 					contentType: mimeType,
-					cacheControl: "public, max-age=31536000",
+					cacheControl: "public, max-age=31536000", // 归档持久化 1 年缓存
 				},
 				customMetadata: {
 					uploadDate: new Date().toISOString()
 				}
 			});
-			await this.r2Bucket.delete(`images/pending/${date}.${foundExtension}`);
+			// 彻底物理删除 R2 的 pending 区域图片，保障空间整洁
+			await this.r2Bucket.delete(key);
 		}
 
 		return {

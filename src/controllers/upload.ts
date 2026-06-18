@@ -92,10 +92,14 @@ export async function batchProcess(c: Context) {
 
 	try {
 		const body = await c.req.json();
+		const key = body?.key as string;
 		const date = body?.date as string;
 
+		if (!key) {
+			return c.json({ error: "Missing R2 pending file key" }, 400);
+		}
 		if (!date) {
-			return c.json({ error: "Missing date parameter" }, 400);
+			return c.json({ error: "Missing target date parameter" }, 400);
 		}
 
 		const db = c.env.DB;
@@ -107,7 +111,7 @@ export async function batchProcess(c: Context) {
 			c.env.BUCKET || null
 		);
 
-		const result = await uploadService.processStashedImage(date);
+		const result = await uploadService.processStashedImage(key, date);
 		return c.json(result);
 	} catch (error: any) {
 		console.error("Error inside batchProcess controller:", error);
