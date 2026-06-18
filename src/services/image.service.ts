@@ -16,4 +16,17 @@ export class ImageService {
 		}
 		return null;
 	}
+
+	/**
+	 * 读取并返回暂存的 R2ObjectBody 或 null，严格防御路径穿透
+	 * @param key R2 对象的键
+	 * @returns 返回 R2ObjectBody 或 null
+	 */
+	async getPendingImage(key: string): Promise<R2ObjectBody | null> {
+		if (!key.startsWith("images/pending/")) {
+			throw new Error("Access denied: Invalid pending image path");
+		}
+		const object = await this.bucket.get(key);
+		return object;
+	}
 }

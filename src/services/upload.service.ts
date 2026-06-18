@@ -107,12 +107,14 @@ export class UploadService {
 		};
 	}
 
-	async stashPendingImage(file: File, date: string): Promise<{ success: boolean; imageKey: string }> {
+	async stashPendingImage(file: File): Promise<{ success: boolean; imageKey: string }> {
 		if (!this.r2Bucket) {
 			throw new Error("R2 bucket is not configured for stashing");
 		}
-		const fileExtension = file.name.split('.').pop() || 'png';
-		const pendingKey = `images/pending/${date}.${fileExtension}`;
+		const timestamp = Date.now();
+		// 过滤和清理文件名中的非法字符
+		const cleanedName = file.name.replace(/[\/\?<>\\:\*\|"]/g, '_');
+		const pendingKey = `images/pending/${timestamp}_${cleanedName}`;
 
 		await this.r2Bucket.put(pendingKey, file.stream(), {
 			httpMetadata: {
@@ -121,6 +123,36 @@ export class UploadService {
 		});
 
 		return { success: true, imageKey: pendingKey };
+	}
+
+	async listPendingImages(): Promise<any[]> {
+		if (!this.r2Bucket) {
+			throw new Error("R2 bucket is not configured");
+		}
+		const listed = await this.r2Bucket.list({ prefix: "images/pending/" });
+		const results: any[] = [];
+
+		for (const obj of listed.objects) {
+			const key = obj.key;
+			// 提取真实文件名：去掉 images/pending/${timestamp}_
+			const prefixMatch = key.match(/^images\/pending\/\d+_(.+)$/);
+			const originalName = prefixMatch ? prefixMatch[1] : key.replace("images/pending/", "");
+
+			// 智能分析建议日期
+			const dateMatch = originalName.match(/(\d{4})[-_]?(\d{2})[-_]?(\d{2})/);
+			const suggestedDate = dateMatch ? `${dateMatch[1]}-${dateMatch[2]}-${dateMatch[3]}` : null;
+
+			results.push({
+				key,
+				originalName,
+				size: obj.size,
+				uploadedAt: obj.uploaded.toISOString(),
+				suggestedDate
+			});
+		}
+
+		// 按时间戳倒序排列（最新上传的优先展示）
+		return results.sort((a, b) => b.key.localeCompare(a.key));
 	}
 
 	async processStashedImage(date: string) {

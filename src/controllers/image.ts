@@ -31,3 +31,34 @@ export async function getImage(c: Context) {
 		return c.json({ error: "Internal Server Error during image retrieval", message: error.message }, 500);
 	}
 }
+
+export async function getPendingImage(c: Context) {
+	const key = c.req.query('key');
+	if (!key) {
+		return c.json({ error: "Missing key parameter" }, 400);
+	}
+	if (!key.startsWith("images/pending/")) {
+		return c.json({ error: "Forbidden" }, 403);
+	}
+	if (!c.env.BUCKET) {
+		return c.json({ error: "R2 bucket is not configured" }, 500);
+	}
+
+	const imageService = new ImageService(c.env.BUCKET);
+	try {
+		const object = await imageService.getPendingImage(key);
+		if (!object) {
+			return c.json({ error: "Pending image not found" }, 404);
+		}
+
+		const headers = new Headers();
+		object.writeHttpMetadata(headers);
+		headers.set("etag", object.httpEtag);
+		headers.set("cache-control", "public, max-age=604800"); // 暂存图片缓存 7 天
+
+		return new Response(object.body, { headers });
+	} catch (error: any) {
+		console.error("Error retrieving pending image inside controller:", error);
+		return c.json({ error: "Internal Server Error", message: error.message }, 500);
+	}
+}

@@ -13,6 +13,8 @@ export function registerRoutes(app: Hono<{ Bindings: Env }>) {
 	app.get('/api/search', searchController.search);
 	app.get('/api/active-sectors', activeController.getActiveSectors);
 	app.get('/api/image', imageController.getImage);
+	app.get('/api/pending-images', uploadController.listPendingImages);
+	app.get('/api/pending-image', imageController.getPendingImage);
 	app.post('/api/upload', uploadController.uploadReview);
 	app.post('/api/batch/upload', uploadController.batchUpload);
 	app.post('/api/batch/process', uploadController.batchProcess);

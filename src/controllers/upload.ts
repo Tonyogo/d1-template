@@ -41,12 +41,8 @@ export async function uploadReview(c: Context) {
 export async function batchUpload(c: Context) {
 	try {
 		const formData = await c.req.formData();
-		const date = formData.get("date") as string;
 		const file = (formData.get("file") || formData.get("image")) as File | null;
 
-		if (!date) {
-			return c.json({ error: "Missing date parameter" }, 400);
-		}
 		if (!file) {
 			return c.json({ error: "Missing file parameter" }, 400);
 		}
@@ -60,11 +56,32 @@ export async function batchUpload(c: Context) {
 			c.env.BUCKET || null
 		);
 
-		const result = await uploadService.stashPendingImage(file, date);
+		const result = await uploadService.stashPendingImage(file);
 		return c.json(result);
 	} catch (error: any) {
 		console.error("Error inside batchUpload controller:", error);
 		return c.json({ error: "Internal Server Error during batch upload", message: error.message }, 500);
+	}
+}
+
+export async function listPendingImages(c: Context) {
+	if (!c.env.BUCKET) {
+		return c.json({ error: "R2 bucket is not configured" }, 500);
+	}
+	try {
+		const db = c.env.DB;
+		const uploadService = new UploadService(
+			new SummaryRepository(db),
+			new SectorRepository(db),
+			new StockRepository(db),
+			c.env,
+			c.env.BUCKET
+		);
+		const list = await uploadService.listPendingImages();
+		return c.json(list);
+	} catch (error: any) {
+		console.error("Error inside listPendingImages controller:", error);
+		return c.json({ error: "Internal Server Error listing pending images", message: error.message }, 500);
 	}
 }
 
