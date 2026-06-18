@@ -149,7 +149,7 @@ export class UploadService {
 			await db.batch(stockStatements);
 		}
 
-		// 4. 将图片重命名移动到正式归档目录，并彻底安全删除 images/pending/ 下的原图
+		// 4. 将图片重命名移动 to 正式归档目录，并彻底安全删除 images/pending/ 下的原图
 		const fileExtension = key.split('.').pop() || 'png';
 		const formalKey = `images/${date}.${fileExtension}`;
 
@@ -168,6 +168,109 @@ export class UploadService {
 			// 彻底物理删除 R2 的 pending 区域图片，保障空间整洁
 			await this.r2Bucket.delete(key);
 		}
+
+		return {
+			success: true,
+			summary: {
+				...summary,
+				date
+			},
+			sectorsCount: sectorsAndStocks.length,
+			stocksCount,
+			rawMarkdown
+		};
+	}
+
+	async commitParsedMarkdown(key: string, date: string, rawMarkdown: string) {
+		if (!this.r2Bucket) {
+			throw new Error("R2 bucket is not configured");
+		}
+
+		if (!key.startsWith("images/pending/")) {
+			throw new Error("Invalid stashed image key pattern");
+		}
+
+		const pendingObject = await this.r2Bucket.get(key);
+		if (!pendingObject) {
+			throw new Error(`Stashed pending image not found: ${key}`);
+		}
+
+		const mimeType = pendingObject.httpMetadata?.contentType || "image/png";
+
+		// 1. OcrParser 智能提取
+		const { summary, sectorsAndStocks } = OcrParser.parseOcrMarkdown(rawMarkdown);
+
+		// 2. 多表级联 D1 批量事务写入
+		const db = this.summaryRepo.db;
+		const del1 = db.prepare("DELETE FROM limit_up_stocks WHERE date = ?").bind(date);
+		const del2 = db.prepare("DELETE FROM sectors WHERE date = ?").bind(date);
+		const del3 = db.prepare("DELETE FROM daily_summary WHERE date = ?").bind(date);
+
+		const insSummary = db.prepare(`
+			INSERT INTO daily_summary (date, stock_count, upgrade_rate, limit_broken_rate, bidding_increase_rate)
+			VALUES (?, ?, ?, ?, ?)
+		`).bind(
+			date,
+			summary.stock_count,
+			summary.upgrade_rate,
+			summary.limit_broken_rate,
+			summary.bidding_increase_rate
+		);
+
+		const insSectors = sectorsAndStocks.map(sec =>
+			db.prepare(`
+				INSERT INTO sectors (date, name, description)
+				VALUES (?, ?, ?)
+			`).bind(date, sec.name, sec.description || null)
+		);
+
+		await db.batch([del1, del2, del3, insSummary, ...insSectors]);
+
+		const sectorIdMap = await this.sectorRepo.getSectorIdMap(date);
+		const stockStatements: any[] = [];
+		let stocksCount = 0;
+
+		for (const sec of sectorsAndStocks) {
+			const sectorId = sectorIdMap[sec.name] || null;
+			for (const stock of sec.stocks) {
+				stockStatements.push(
+					db.prepare(`
+						INSERT INTO limit_up_stocks (date, status, code, name, time, concept_reason, sector_id)
+						VALUES (?, ?, ?, ?, ?, ?, ?)
+					`).bind(
+						date,
+						stock.status,
+						stock.code,
+						stock.name,
+						stock.time,
+						stock.concept_reason,
+						sectorId
+					)
+				);
+				stocksCount++;
+			}
+		}
+
+		if (stockStatements.length > 0) {
+			await db.batch(stockStatements);
+		}
+
+		// 3. 将图片重命名移动到正式归档目录，并彻底安全删除 images/pending/ 下的原图
+		const fileExtension = key.split('.').pop() || 'png';
+		const formalKey = `images/${date}.${fileExtension}`;
+
+		await this.r2Bucket.put(formalKey, pendingObject.body, {
+			httpMetadata: {
+				contentType: mimeType,
+				cacheControl: "public, max-age=31536000", // 归档持久化 1 年缓存
+			},
+			customMetadata: {
+				uploadDate: new Date().toISOString()
+			}
+		});
+
+		// 彻底物理删除 R2 的 pending 区域图片，保障空间整洁
+		await this.r2Bucket.delete(key);
 
 		return {
 			success: true,

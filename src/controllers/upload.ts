@@ -114,3 +114,37 @@ export async function batchProcess(c: Context) {
 		return c.json({ error: "Internal Server Error during batch processing", message: error.message }, 500);
 	}
 }
+
+export async function commitParsed(c: Context) {
+	try {
+		const body = await c.req.json();
+		const key = body?.key as string;
+		const date = body?.date as string;
+		const rawMarkdown = body?.rawMarkdown as string;
+
+		if (!key) {
+			return c.json({ error: "Missing R2 pending file key" }, 400);
+		}
+		if (!date) {
+			return c.json({ error: "Missing target date parameter" }, 400);
+		}
+		if (!rawMarkdown) {
+			return c.json({ error: "Missing rawMarkdown parameter" }, 400);
+		}
+
+		const db = c.env.DB;
+		const uploadService = new UploadService(
+			new SummaryRepository(db),
+			new SectorRepository(db),
+			new StockRepository(db),
+			c.env,
+			c.env.BUCKET || null
+		);
+
+		const result = await uploadService.commitParsedMarkdown(key, date, rawMarkdown);
+		return c.json(result);
+	} catch (error: any) {
+		console.error("Error inside commitParsed controller:", error);
+		return c.json({ error: "Internal Server Error during parsing commit", message: error.message }, 500);
+	}
+}
