@@ -128,9 +128,9 @@ class App {
         return 'bg-slate-50 text-slate-600 border border-slate-100';
     }
 
-    deepLinkStock(stockName) {
+    deepLinkStock(stockCode, stockName) {
         this.switchTab('search');
-        this.searchTab.input.value = stockName;
+        this.searchTab.input.value = stockCode || stockName;
         this.searchTab.activeSectors = [];
         this.searchTab.activeReasons = [];
         this.searchTab.renderSectorTags();

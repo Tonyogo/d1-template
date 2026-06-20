@@ -65,7 +65,7 @@ export class ActiveTab {
                         <span class="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">领涨龙头股</span>
                         <div class="flex flex-wrap gap-1.5">
                             ${sector.leaders.map(ld => `
-                                <button class="inline-flex items-center px-2 py-1 rounded-lg text-xs font-semibold bg-red-50 text-red-700 hover:bg-red-100 hover:text-red-900 border border-red-100 transition-colors font-sans" stock-leader-link="${ld.name}">
+                                <button class="inline-flex items-center px-2 py-1 rounded-lg text-xs font-semibold bg-red-50 text-red-700 hover:bg-red-100 hover:text-red-900 border border-red-100 transition-colors font-sans" stock-leader-link="${ld.code}" stock-leader-name="${ld.name}">
                                     <span class="w-1 h-1 bg-red-500 rounded-full mr-1.5 shrink-0"></span>
                                     <span>${ld.name}</span>
                                     <span class="text-slate-400 font-mono ml-1 font-medium">(${ld.count}次)</span>
@@ -111,7 +111,9 @@ export class ActiveTab {
 
             card.querySelectorAll('[stock-leader-link]').forEach(el => {
                 el.addEventListener('click', () => {
-                    this.app.deepLinkStock(el.getAttribute('stock-leader-link'));
+                    const code = el.getAttribute('stock-leader-link');
+                    const name = el.getAttribute('stock-leader-name');
+                    this.app.deepLinkStock(code, name);
                 });
             });
 

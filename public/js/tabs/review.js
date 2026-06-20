@@ -99,7 +99,7 @@ export class ReviewTab {
                             </span>
                         </td>
                         <td class="hidden md:table-cell px-6 py-3 text-sm text-slate-500 font-mono whitespace-nowrap">${stock.code}</td>
-                        <td class="px-4 py-1 md:px-6 md:py-3 text-sm text-slate-900 whitespace-nowrap hover:text-red-500 cursor-pointer flex items-baseline space-x-2 md:table-cell" stock-link="${stock.name}">
+                        <td class="px-4 py-1 md:px-6 md:py-3 text-sm text-slate-900 whitespace-nowrap hover:text-red-500 cursor-pointer flex items-baseline space-x-2 md:table-cell" stock-link="${stock.code}" stock-name="${stock.name}">
                             <span class="text-base font-bold md:text-sm md:font-bold">${stock.name}</span>
                             <span class="text-xs text-slate-400 font-mono font-medium md:hidden">${stock.code}</span>
                         </td>
@@ -155,7 +155,9 @@ export class ReviewTab {
 
             item.querySelectorAll('[stock-link]').forEach(el => {
                 el.addEventListener('click', () => {
-                    this.app.deepLinkStock(el.getAttribute('stock-link'));
+                    const code = el.getAttribute('stock-link');
+                    const name = el.getAttribute('stock-name');
+                    this.app.deepLinkStock(code, name);
                 });
             });
 

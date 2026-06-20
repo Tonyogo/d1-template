@@ -170,6 +170,7 @@ export class SearchTab {
 
                 stockList.forEach(stock => {
                     const latest = stock.history[0];
+                    const shouldExpand = (stockList.length === 1) || (q && /^\d{6}$/.test(q) && stock.code === q);
                     const card = document.createElement('div');
                     card.className = "bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden transition-all duration-150";
 
@@ -209,26 +210,27 @@ export class SearchTab {
 
                     const statusStyle = this.app.getStatusBadgeStyle(latest.status);
                     card.innerHTML = `
-                        <button class="w-full px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between hover:bg-slate-50/50 transition-colors text-left border-b border-slate-100 gap-4">
-                            <div class="flex items-center space-x-3 truncate">
-                                <div class="p-2 bg-red-50 text-red-500 rounded-lg shrink-0"><i data-lucide="trending-up" class="w-4 h-4"></i></div>
-                                <div class="truncate">
-                                    <span class="text-base font-extrabold text-slate-900">${stock.name}</span>
-                                    <span class="text-xs text-slate-400 ml-2 font-mono font-medium">${stock.code}</span>
-                                </div>
+                    <button class="w-full flex items-center justify-between p-5 hover:bg-slate-50/50 transition text-left" toggle-stock-code="${stock.code}">
+                        <div class="flex items-center space-x-3.5">
+                            <div class="p-3 bg-red-50 rounded-xl text-red-500 shrink-0">
+                                <i data-lucide="trending-up" class="w-5 h-5"></i>
                             </div>
-                            <div class="flex flex-wrap items-center gap-3 sm:gap-4 shrink-0">
-                                <div class="text-xs text-slate-500">
-                                    最新：<span class="font-semibold text-slate-700 font-mono">${latest.date}</span>
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${statusStyle} ml-1">${latest.status || '涨停'}</span>
-                                </div>
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-800 border border-slate-200">
-                                    ${stock.history.length} 次记录
-                                </span>
-                                <div class="p-1 text-slate-400"><i data-lucide="chevron-down" class="w-5 h-5 transition-transform duration-150"></i></div>
+                            <div>
+                                <h3 class="text-sm font-bold text-slate-900 flex items-baseline space-x-2">
+                                    <span>${stock.name}</span>
+                                    <span class="text-xs text-slate-400 font-mono font-medium">${stock.code}</span>
+                                </h3>
+                                <p class="text-xxs text-slate-400 mt-0.5">历史涨停 ${stock.history.length} 次 | 最近一次: ${latest.date}</p>
                             </div>
-                        </button>
-                        <div class="stock-collapse hidden border-t border-slate-100 overflow-x-auto bg-slate-50/30">
+                        </div>
+                        <div class="flex items-center space-x-4">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${statusStyle}">
+                                ${latest.status || '涨停'}
+                            </span>
+                            <div class="p-1 text-slate-400"><i data-lucide="chevron-down" class="w-5 h-5 transition-transform duration-150 ${shouldExpand ? 'rotate-180' : ''}"></i></div>
+                        </div>
+                    </button>
+                    <div class="stock-collapse ${shouldExpand ? '' : 'hidden'} border-t border-slate-100 overflow-x-auto bg-slate-50/30">
                             <table class="min-w-full divide-y divide-slate-100">
                                 <thead class="bg-slate-50/50 hidden md:table-header-group">
                                     <tr>
