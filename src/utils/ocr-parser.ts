@@ -65,7 +65,7 @@ export class OcrParser {
 						const stockRow: StockParsed = {
 							status: parts[0] || null,
 							code,
-							name: parts[2],
+							name: parts[2] ? parts[2].replace(/\s+/g, '') : '',
 							time: parts[3] || null,
 							concept_reason: parts[4] || null
 						};
