@@ -124,16 +124,23 @@
         <!-- ==================== TAB 2: DAILY REVIEW ==================== -->
         <section id="tab-content-review" class="hidden space-y-6">
             <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div class="flex items-center space-x-3">
-                    <div class="p-2.5 bg-slate-100 rounded-xl text-slate-600">
-                        <i data-lucide="filter" class="w-5 h-5"></i>
+                <div class="flex flex-wrap items-center gap-4">
+                    <div class="flex items-center space-x-3">
+                        <div class="p-2.5 bg-slate-100 rounded-xl text-slate-600">
+                            <i data-lucide="filter" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <label for="date-select" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider">选择复盘日期</label>
+                            <select id="date-select" class="mt-1 block w-48 pl-3 pr-10 py-1.5 text-base border-slate-300 focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm rounded-lg bg-slate-50 font-medium text-slate-900">
+                                <option value="">加载中...</option>
+                            </select>
+                        </div>
                     </div>
-                    <div>
-                        <label for="date-select" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider">选择复盘日期</label>
-                        <select id="date-select" class="mt-1 block w-48 pl-3 pr-10 py-1.5 text-base border-slate-300 focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm rounded-lg bg-slate-50 font-medium text-slate-900">
-                            <option value="">加载中...</option>
-                        </select>
-                    </div>
+                    <!-- 新增：修正复盘数据按钮 -->
+                    <button id="review-edit-btn" class="hidden px-4 py-2 bg-slate-800 hover:bg-slate-200 text-slate-300 rounded-lg text-xs font-bold shadow-sm transition duration-150 flex items-center space-x-1.5 h-10 mt-1 md:mt-5">
+                        <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                        <span>修正数据</span>
+                    </button>
                 </div>
                 <div id="selected-date-info" class="text-right hidden md:block">
                     <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700 border border-red-200">
@@ -422,6 +429,36 @@
                         <i data-lucide="zoom-in" class="w-4 h-4"></i>
                     </button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== MARKDOWN EDIT MODAL (NEW) ==================== -->
+    <div id="edit-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-2xl w-full flex flex-col max-h-[85vh] overflow-hidden">
+            <!-- Header -->
+            <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                <div>
+                    <h3 class="text-base font-extrabold text-slate-900">修正复盘数据</h3>
+                    <p id="edit-modal-date" class="text-xs text-slate-400 mt-0.5">正在修改 -- 的复盘 Markdown</p>
+                </div>
+                <button id="edit-modal-close" class="p-1.5 hover:bg-slate-200 text-slate-400 hover:text-slate-600 rounded-lg transition"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+
+            <!-- Textarea Editor -->
+            <div class="p-6 flex-grow overflow-y-auto">
+                <label for="edit-markdown-textarea" class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">原始 Markdown 文本</label>
+                <textarea id="edit-markdown-textarea" class="w-full h-80 p-4 border border-slate-300 rounded-xl font-mono text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500" placeholder="正在加载原始 Markdown..."></textarea>
+                <p class="text-[10px] text-slate-400 mt-2 leading-relaxed">提示：您可以手动添加板块（格式如 `### 板块名称`）、修改个股数据行（格式如 `|首板|600123|股票名称|时间|概念原因|`）。点击下方保存后，系统将自动重新校验入库并同步刷新复盘页面。</p>
+            </div>
+
+            <!-- Footer -->
+            <div class="px-6 py-4 border-t border-slate-100 bg-slate-50/50 flex justify-end space-x-3">
+                <button id="edit-modal-cancel-btn" class="px-4 py-2 border border-slate-200 hover:bg-slate-100 text-slate-700 rounded-lg text-xs font-bold transition">取消</button>
+                <button id="edit-modal-save-btn" class="px-5 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-xs font-bold shadow-sm transition flex items-center space-x-1.5">
+                    <i data-lucide="check" class="w-4 h-4"></i>
+                    <span>确认修改并入库</span>
+                </button>
             </div>
         </div>
     </div>
