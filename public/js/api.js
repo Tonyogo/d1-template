@@ -20,5 +20,7 @@ export const api = {
     listPendingImages: () => fetch('/api/pending-images').then(r => r.json()),
     processPendingImage: (key, date) => fetch('/api/batch/process', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key, date }) }).then(r => r.json()),
     commitParsedMarkdown: (key, date, rawMarkdown) => fetch('/api/batch/commit-parsed', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key, date, rawMarkdown }) }).then(r => r.json()),
-    deletePendingImage: (key) => fetch('/api/pending-image', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key }) }).then(r => r.json())
+    deletePendingImage: (key) => fetch('/api/pending-image', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key }) }).then(r => r.json()),
+    getMarkdown: (date) => fetch(`/api/markdown?date=${encodeURIComponent(date)}`).then(r => r.json()),
+    commitMarkdownUpdate: (payload) => fetch('/api/markdown/commit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }).then(r => r.json())
 };

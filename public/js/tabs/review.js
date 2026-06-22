@@ -3,7 +3,9 @@ import { api } from '../api.js';
 export class ReviewTab {
     constructor(app) {
         this.app = app;
+        this.currentLoadedDate = null;
         this.initDOM();
+        this.initEditModalDOM();
     }
 
     initDOM() {
@@ -21,8 +23,31 @@ export class ReviewTab {
         this.loader = document.getElementById('review-loader');
         this.accordionContainer = document.getElementById('sectors-accordion');
 
+        // 纠错按钮
+        this.editBtn = document.getElementById('review-edit-btn');
+
         this.select.addEventListener('change', (e) => this.loadDailyDetails(e.target.value));
         this.imageToggleBtn.addEventListener('click', () => this.toggleImage());
+        this.editBtn.addEventListener('click', () => this.openEditModal());
+    }
+
+    initEditModalDOM() {
+        this.editModal = document.getElementById('edit-modal');
+        this.editModalDate = document.getElementById('edit-modal-date');
+        this.editModalClose = document.getElementById('edit-modal-close');
+        this.editMarkdownTextarea = document.getElementById('edit-markdown-textarea');
+        this.editModalCancelBtn = document.getElementById('edit-modal-cancel-btn');
+        this.editModalSaveBtn = document.getElementById('edit-modal-save-btn');
+
+        this.editModalClose.addEventListener('click', () => this.closeEditModal());
+        this.editModalCancelBtn.addEventListener('click', () => this.closeEditModal());
+        this.editModalSaveBtn.addEventListener('click', () => this.saveMarkdownCorrection());
+
+        this.editModal.addEventListener('click', (e) => {
+            if (e.target === this.editModal) {
+                this.closeEditModal();
+            }
+        });
     }
 
     toggleImage() {
@@ -37,10 +62,16 @@ export class ReviewTab {
     }
 
     async loadDailyDetails(date) {
-        if (!date) return;
+        if (!date) {
+            this.currentLoadedDate = null;
+            this.editBtn.classList.add('hidden');
+            return;
+        }
 
+        this.currentLoadedDate = date;
         this.loader.classList.remove('hidden');
         this.accordionContainer.innerHTML = '';
+        this.editBtn.classList.add('hidden'); // 加载中先隐藏按钮
 
         try {
             this.reviewImg.src = '/api/image?date=' + date;
@@ -63,6 +94,9 @@ export class ReviewTab {
             this.statBidding.textContent = summary.bidding_increase_rate !== null ? `${summary.bidding_increase_rate}%` : '--%';
 
             this.renderSectorsAccordion(data.sectors);
+
+            // 数据成功加载后，展现“修正数据”按钮
+            this.editBtn.classList.remove('hidden');
         } catch (err) {
             console.error(err);
             this.accordionContainer.innerHTML = '<div class="text-center py-10 text-slate-500">无法加载此日期的详细复盘数据</div>';
@@ -88,15 +122,12 @@ export class ReviewTab {
             sector.stocks.forEach(stock => {
                 const statusStyle = this.app.getStatusBadgeStyle(stock.status);
                 stockRows += `
-                    <tr class="flex flex-col md:table-row p-4 md:p-3 mb-3 md:mb-0 border border-slate-200 md:border-0 rounded-xl md:rounded-none bg-white md:bg-transparent shadow-sm md:shadow-none hover:bg-slate-50/50 transition-colors">
-                        <td class="flex md:table-cell justify-between items-center px-0 md:px-6 py-1.5 md:py-3 border-b md:border-b-0 border-slate-100 pb-2 md:pb-3 text-sm">
+                    <tr class="flex flex-col md:table-row hover:bg-slate-50/50 transition-colors border-b border-slate-100 last:border-b-0 md:border-b-0">
+                        <td class="px-4 pt-3 pb-1 md:px-6 md:py-3 text-sm whitespace-nowrap flex justify-between items-center md:table-cell">
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-semibold ${statusStyle}">
                                 ${stock.status || '涨停'}
                             </span>
-                            <span class="md:hidden text-xs text-slate-400 font-mono flex items-center gap-1">
-                                <i data-lucide="clock" class="w-3.5 h-3.5"></i>
-                                <span>${stock.time || '--:--'}</span>
-                            </span>
+                            <span class="text-sm text-slate-500 font-mono md:hidden">${stock.time || '--:--'}</span>
                         </td>
                         <td class="hidden md:table-cell px-6 py-3 text-sm text-slate-500 font-mono whitespace-nowrap">${stock.code}</td>
                         <td class="px-4 py-1 md:px-6 md:py-3 text-sm text-slate-900 whitespace-nowrap hover:text-red-500 cursor-pointer flex items-baseline space-x-2 md:table-cell" stock-link="${stock.code}" stock-name="${stock.name}">
@@ -104,10 +135,7 @@ export class ReviewTab {
                             <span class="text-xs text-slate-400 font-mono font-medium md:hidden">${stock.code}</span>
                         </td>
                         <td class="hidden md:table-cell px-6 py-3 text-sm text-slate-500 font-mono whitespace-nowrap">${stock.time || '--:--'}</td>
-                        <td class="block md:table-cell px-0 md:px-6 py-1.5 md:py-3 text-sm text-slate-600 bg-slate-50 md:bg-transparent p-2.5 md:p-0 rounded-lg">
-                            <div class="md:hidden text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">涨停动因 & 概念</div>
-                            <div class="leading-relaxed text-xs md:text-sm">${stock.concept_reason || '--'}</div>
-                        </td>
+                        <td class="px-4 py-2.5 text-sm text-slate-600 bg-slate-50 rounded-lg mx-4 mb-3 md:mx-0 md:mb-0 md:bg-transparent md:px-6 md:py-3 md:table-cell">${stock.concept_reason || '--'}</td>
                     </tr>
                 `;
             });
@@ -164,5 +192,81 @@ export class ReviewTab {
             this.accordionContainer.appendChild(item);
         });
         lucide.createIcons();
+    }
+
+    async openEditModal() {
+        if (!this.currentLoadedDate) return;
+
+        this.editModalDate.textContent = `正在读取 ${this.currentLoadedDate} 的 R2 原始 Markdown 备份...`;
+        this.editMarkdownTextarea.value = '';
+        this.editMarkdownTextarea.disabled = true;
+        this.editModalSaveBtn.disabled = true;
+        this.editModalSaveBtn.classList.add('opacity-50');
+
+        this.editModal.classList.remove('hidden');
+        lucide.createIcons();
+
+        try {
+            const data = await api.getMarkdown(this.currentLoadedDate);
+            if (data.error || !data.markdown) {
+                throw new Error(data.message || data.error || '获取 Markdown 文件失败');
+            }
+            this.editMarkdownTextarea.value = data.markdown;
+            this.editModalDate.textContent = `正在修改 ${this.currentLoadedDate} 的复盘 Markdown 备份`;
+            this.editMarkdownTextarea.disabled = false;
+            this.editModalSaveBtn.disabled = false;
+            this.editModalSaveBtn.classList.remove('opacity-50');
+        } catch (err) {
+            console.error(err);
+            alert(`获取失败: ${err.message || err}`);
+            this.closeEditModal();
+        }
+    }
+
+    closeEditModal() {
+        this.editModal.classList.add('hidden');
+    }
+
+    async saveMarkdownCorrection() {
+        if (!this.currentLoadedDate || this.editMarkdownTextarea.disabled) return;
+
+        const text = this.editMarkdownTextarea.value.trim();
+        if (!text) {
+            alert('Markdown 文本不能为空！');
+            return;
+        }
+
+        const originalBtnHTML = this.editModalSaveBtn.innerHTML;
+        this.editModalSaveBtn.disabled = true;
+        this.editModalSaveBtn.classList.add('opacity-50');
+        this.editMarkdownTextarea.disabled = true;
+        this.editModalSaveBtn.innerHTML = `<div class="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white"></div> <span>重新解析入库中...</span>`;
+
+        try {
+            const payload = {
+                date: this.currentLoadedDate,
+                rawMarkdown: text
+            };
+
+            const data = await api.commitMarkdownUpdate(payload);
+            if (data.error) {
+                throw new Error(data.message || data.error);
+            }
+
+            alert('纠错修改成功！数据已重新级联入库。');
+            this.closeEditModal();
+
+            // 联动重载刷新当前每日复盘页面
+            await this.loadDailyDetails(this.currentLoadedDate);
+        } catch (err) {
+            console.error('Failed to save correction:', err);
+            alert(`修改入库失败: ${err.message || err}`);
+        } finally {
+            this.editModalSaveBtn.disabled = false;
+            this.editModalSaveBtn.classList.remove('opacity-50');
+            this.editMarkdownTextarea.disabled = false;
+            this.editModalSaveBtn.innerHTML = originalBtnHTML;
+            lucide.createIcons();
+        }
     }
 }
