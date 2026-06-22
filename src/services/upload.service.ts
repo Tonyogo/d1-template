@@ -55,7 +55,7 @@ export class UploadService {
 			const prefixMatch = key.match(/^images\/pending\/\d+_(.+)$/);
 			const originalName = prefixMatch ? prefixMatch[1] : key.replace("images/pending/", "");
 
-			// 智能分析建议日期
+			// 智能 analysis 建议日期
 			const dateMatch = originalName.match(/(\d{4})[-_]?(\d{2})[-_]?(\d{2})/);
 			const suggestedDate = dateMatch ? `${dateMatch[1]}-${dateMatch[2]}-${dateMatch[3]}` : null;
 
@@ -169,6 +169,14 @@ export class UploadService {
 			await this.r2Bucket.delete(key);
 		}
 
+		// 5. 永久物理备份 Markdown 原始文本，方便日后随时纠错与重新 D1 入库
+		const mdKey = `markdowns/${date}.md`;
+		await this.r2Bucket.put(mdKey, rawMarkdown, {
+			httpMetadata: {
+				contentType: "text/markdown; charset=utf-8"
+			}
+		});
+
 		return {
 			success: true,
 			summary: {
@@ -272,6 +280,14 @@ export class UploadService {
 		// 彻底物理删除 R2 的 pending 区域图片，保障空间整洁
 		await this.r2Bucket.delete(key);
 
+		// 4. 永久物理备份 Markdown 原始文本，方便日后随时纠错与重新 D1 入库
+		const backupMdKey = `markdowns/${date}.md`;
+		await this.r2Bucket.put(backupMdKey, rawMarkdown, {
+			httpMetadata: {
+				contentType: "text/markdown; charset=utf-8"
+			}
+		});
+
 		return {
 			success: true,
 			summary: {
@@ -281,6 +297,100 @@ export class UploadService {
 			sectorsCount: sectorsAndStocks.length,
 			stocksCount,
 			rawMarkdown
+		};
+	}
+
+	async getMarkdownByDate(date: string): Promise<string> {
+		if (!this.r2Bucket) {
+			throw new Error("R2 bucket is not configured");
+		}
+		const mdKey = `markdowns/${date}.md`;
+		const mdObject = await this.r2Bucket.get(mdKey);
+		if (!mdObject) {
+			throw new Error(`未找到该日期对应的 Markdown 备份文件，无法执行纠错修改。`);
+		}
+		return await mdObject.text();
+	}
+
+	async commitMarkdownUpdate(date: string, rawMarkdown: string) {
+		if (!this.r2Bucket) {
+			throw new Error("R2 bucket is not configured");
+		}
+
+		// 1. 调用 OcrParser 再次对最新手动修改的文本进行解析与清洗
+		const { summary, sectorsAndStocks } = OcrParser.parseOcrMarkdown(rawMarkdown);
+
+		// 2. 多表级联 D1 批量事务写入
+		const db = this.summaryRepo.db;
+		const del1 = db.prepare("DELETE FROM limit_up_stocks WHERE date = ?").bind(date);
+		const del2 = db.prepare("DELETE FROM sectors WHERE date = ?").bind(date);
+		const del3 = db.prepare("DELETE FROM daily_summary WHERE date = ?").bind(date);
+
+		const insSummary = db.prepare(`
+			INSERT INTO daily_summary (date, stock_count, upgrade_rate, limit_broken_rate, bidding_increase_rate)
+			VALUES (?, ?, ?, ?, ?)
+		`).bind(
+			date,
+			summary.stock_count,
+			summary.upgrade_rate,
+			summary.limit_broken_rate,
+			summary.bidding_increase_rate
+		);
+
+		const insSectors = sectorsAndStocks.map(sec =>
+			db.prepare(`
+				INSERT INTO sectors (date, name, description)
+				VALUES (?, ?, ?)
+			`).bind(date, sec.name, sec.description || null)
+		);
+
+		await db.batch([del1, del2, del3, insSummary, ...insSectors]);
+
+		const sectorIdMap = await this.sectorRepo.getSectorIdMap(date);
+		const stockStatements: any[] = [];
+		let stocksCount = 0;
+
+		for (const sec of sectorsAndStocks) {
+			const sectorId = sectorIdMap[sec.name] || null;
+			for (const stock of sec.stocks) {
+				stockStatements.push(
+					db.prepare(`
+						INSERT INTO limit_up_stocks (date, status, code, name, time, concept_reason, sector_id)
+						VALUES (?, ?, ?, ?, ?, ?, ?)
+					`).bind(
+						date,
+						stock.status,
+						stock.code,
+						stock.name,
+						stock.time,
+						stock.concept_reason,
+						sectorId
+					)
+				);
+				stocksCount++;
+			}
+		}
+
+		if (stockStatements.length > 0) {
+			await db.batch(stockStatements);
+		}
+
+		// 3. 覆盖 R2 中的 Markdown 备份
+		const mdKey = `markdowns/${date}.md`;
+		await this.r2Bucket.put(mdKey, rawMarkdown, {
+			httpMetadata: {
+				contentType: "text/markdown; charset=utf-8"
+			}
+		});
+
+		return {
+			success: true,
+			summary: {
+				...summary,
+				date
+			},
+			sectorsCount: sectorsAndStocks.length,
+			stocksCount
 		};
 	}
 }
