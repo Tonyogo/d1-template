@@ -148,3 +148,57 @@ export async function commitParsed(c: Context) {
 		return c.json({ error: "Internal Server Error during parsing commit", message: error.message }, 500);
 	}
 }
+
+export async function getMarkdown(c: Context) {
+	const date = c.req.query('date');
+	if (!date) {
+		return c.json({ error: "Missing date parameter" }, 400);
+	}
+
+	try {
+		const db = c.env.DB;
+		const uploadService = new UploadService(
+			new SummaryRepository(db),
+			new SectorRepository(db),
+			new StockRepository(db),
+			c.env,
+			c.env.BUCKET || null
+		);
+
+		const markdown = await uploadService.getMarkdownByDate(date);
+		return c.json({ success: true, markdown });
+	} catch (error: any) {
+		console.error("Error inside getMarkdown controller:", error);
+		return c.json({ error: "Internal Server Error during markdown retrieval", message: error.message }, 500);
+	}
+}
+
+export async function commitMarkdownUpdate(c: Context) {
+	try {
+		const body = await c.req.json();
+		const date = body?.date as string;
+		const rawMarkdown = body?.rawMarkdown as string;
+
+		if (!date) {
+			return c.json({ error: "Missing date parameter" }, 400);
+		}
+		if (!rawMarkdown) {
+			return c.json({ error: "Missing rawMarkdown parameter" }, 400);
+		}
+
+		const db = c.env.DB;
+		const uploadService = new UploadService(
+			new SummaryRepository(db),
+			new SectorRepository(db),
+			new StockRepository(db),
+			c.env,
+			c.env.BUCKET || null
+		);
+
+		const result = await uploadService.commitMarkdownUpdate(date, rawMarkdown);
+		return c.json(result);
+	} catch (error: any) {
+		console.error("Error inside commitMarkdownUpdate controller:", error);
+		return c.json({ error: "Internal Server Error during markdown commit", message: error.message }, 500);
+	}
+}
