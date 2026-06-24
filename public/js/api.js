@@ -1,6 +1,17 @@
 export const api = {
-    getDailySummaries: () => fetch('/api/daily-summaries').then(r => r.json()),
-    getDailyDetails: (date) => fetch(`/api/daily-details/${encodeURIComponent(date)}`).then(r => r.json()),
+    // 统一处理响应校验，对所有 !response.ok 的错误抛出附带状态码的统一详细错误
+    async fetchJson(url, options = {}) {
+        const res = await fetch(url, options);
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            const errMsg = errData.message || errData.error || `HTTP 错误 (状态码: ${res.status})`;
+            throw new Error(errMsg);
+        }
+        return await res.json();
+    },
+
+    getDailySummaries: () => api.fetchJson('/api/daily-summaries'),
+    getDailyDetails: (date) => api.fetchJson(`/api/daily-details/${encodeURIComponent(date)}`),
     searchStocks: (params) => {
         const queryParams = new URLSearchParams();
         if (params.q) queryParams.append('q', params.q);
@@ -11,16 +22,15 @@ export const api = {
             params.concept_reasons.forEach(r => queryParams.append('concept_reasons', r));
         }
         queryParams.append('sector_match_mode', params.sector_match_mode || 'exact');
-        return fetch('/api/search?' + queryParams.toString()).then(r => r.json());
+        return api.fetchJson('/api/search?' + queryParams.toString());
     },
-    getActiveSectors: (days) => fetch(`/api/active-sectors?days=${days}`).then(r => r.json()),
-    uploadImage: (formData) => fetch('/api/upload', { method: 'POST', body: formData }).then(r => r.json()),
-    batchUpload: (formData) => fetch('/api/batch/upload', { method: 'POST', body: formData }).then(r => r.json()),
-    batchProcess: (payload) => fetch('/api/batch/process', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }).then(r => r.json()),
-    listPendingImages: () => fetch('/api/pending-images').then(r => r.json()),
-    processPendingImage: (key, date) => fetch('/api/batch/process', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key, date }) }).then(r => r.json()),
-    commitParsedMarkdown: (key, date, rawMarkdown) => fetch('/api/batch/commit-parsed', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key, date, rawMarkdown }) }).then(r => r.json()),
-    deletePendingImage: (key) => fetch('/api/pending-image', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key }) }).then(r => r.json()),
-    getMarkdown: (date) => fetch(`/api/markdown?date=${encodeURIComponent(date)}`).then(r => r.json()),
-    commitMarkdownUpdate: (payload) => fetch('/api/markdown/commit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }).then(r => r.json())
+    getActiveSectors: (days) => api.fetchJson(`/api/active-sectors?days=${days}`),
+    batchUpload: (formData) => api.fetchJson('/api/batch/upload', { method: 'POST', body: formData }),
+    batchProcess: (payload) => api.fetchJson('/api/batch/process', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }),
+    listPendingImages: () => api.fetchJson('/api/pending-images'),
+    processPendingImage: (key, date) => api.fetchJson('/api/batch/process', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key, date }) }),
+    commitParsedMarkdown: (key, date, rawMarkdown) => api.fetchJson('/api/batch/commit-parsed', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key, date, rawMarkdown }) }),
+    deletePendingImage: (key) => api.fetchJson('/api/pending-image', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key }) }),
+    getMarkdown: (date) => api.fetchJson(`/api/markdown?date=${encodeURIComponent(date)}`),
+    commitMarkdownUpdate: (payload) => api.fetchJson('/api/markdown/commit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
 };
