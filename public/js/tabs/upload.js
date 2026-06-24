@@ -17,6 +17,7 @@ export class UploadTab {
         this.pendingRefreshBtn = document.getElementById('pending-refresh-btn');
         this.pendingProcessAllBtn = document.getElementById('pending-process-all-btn');
         this.pendingTbody = document.getElementById('pending-tbody');
+        this.concurrencySelect = document.getElementById('pending-concurrency-select');
 
         // 图片预览 Modal 节点
         this.previewModal = document.getElementById('preview-modal');
@@ -80,6 +81,17 @@ export class UploadTab {
                 this.closePreviewModal();
             }
         });
+
+        // 初始化并同步并发选择与 LocalStorage 持久化记忆
+        if (this.concurrencySelect) {
+            const cachedLimit = localStorage.getItem('pending_concurrency_limit');
+            if (cachedLimit !== null) {
+                this.concurrencySelect.value = cachedLimit;
+            }
+            this.concurrencySelect.addEventListener('change', (e) => {
+                localStorage.setItem('pending_concurrency_limit', e.target.value);
+            });
+        }
     }
 
     initProxyDOM() {
@@ -554,7 +566,9 @@ export class UploadTab {
             return;
         }
 
-        if (!confirm(`确定要开始一键顺序处理当前队列中的所有 ${rows.length} 张图片吗？\n将按顺序单线程进行 OCR 解析，请耐心等待。`)) {
+        const concurrencyLimit = this.concurrencySelect ? parseInt(this.concurrencySelect.value, 10) : 3;
+
+        if (!confirm(`确定要开始一键并行处理当前队列中的所有 ${rows.length} 张图片吗？\n将开启 ${concurrencyLimit} 路线程同时并发导入。`)) {
             return;
         }
 
@@ -564,86 +578,85 @@ export class UploadTab {
         let successCount = 0;
         let failCount = 0;
 
-        try {
-            for (const row of rows) {
-                const picker = row.querySelector('input[type="date"]');
-                const processBtn = row.querySelector('button.bg-red-500');
-                const deleteBtn = row.querySelector('button.text-slate-500');
+        const tasks = rows.map(row => {
+            const picker = row.querySelector('input[type="date"]');
+            const processBtn = row.querySelector('button.bg-red-500');
+            const deleteBtn = row.querySelector('button.text-slate-500');
+            const key = row.getAttribute('data-key');
+            return { row, picker, processBtn, deleteBtn, key, processed: false };
+        }).filter(t => t.processBtn && t.deleteBtn && t.picker && !t.processBtn.disabled);
 
-                if (!processBtn || !deleteBtn || !picker) continue;
-                if (processBtn.disabled) continue;
-
-                const key = row.getAttribute('data-key');
-                const date = picker.value;
-
-                if (!this.isValidDate(date)) {
-                    row.classList.add('bg-red-50/30');
-                    failCount++;
-                    continue;
-                }
-
-                processBtn.disabled = true;
-                deleteBtn.disabled = true;
-                picker.disabled = true;
-
-                const originalBtnHTML = processBtn.innerHTML;
-                processBtn.className = "px-3 py-1 bg-red-400 text-white rounded-lg text-xs font-bold shadow-sm inline-flex items-center space-x-1 cursor-not-allowed";
-                processBtn.innerHTML = `<div class="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div> <span>解析中...</span>`;
-                row.className = "bg-blue-50/30 transition duration-150";
-
-                try {
-                    let data;
-                    const ext = key.split('.').pop().toLowerCase();
-                    const mimeMap = { 'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'webp': 'image/webp', 'png': 'image/png' };
-                    const mimeType = mimeMap[ext] || 'image/png';
-
-                    const localMarkdown = await this.ocrWithLocalProxy(key, mimeType);
-
-                    if (localMarkdown) {
-                        console.log("Using decentralized local proxy OCR result.");
-                        data = await api.commitParsedMarkdown(key, date, localMarkdown);
-                    } else {
-                        console.log("Fallback to cloud worker proxy OCR.");
-                        data = await api.processPendingImage(key, date);
-                    }
-
-                    if (data.error) {
-                        throw new Error(data.message || data.error);
-                    }
-
-                    row.className = "bg-emerald-50/30 transition duration-150";
-                    processBtn.className = "px-3 py-1 bg-emerald-500 text-white rounded-lg text-xs font-bold shadow-sm inline-flex items-center space-x-1";
-                    processBtn.innerHTML = `<i data-lucide="check" class="w-3.5 h-3.5"></i> <span>解析成功</span>`;
-                    lucide.createIcons();
-
-                    successCount++;
-
-                    setTimeout(() => {
-                        row.classList.add('transition-opacity', 'duration-500', 'opacity-0');
-                        setTimeout(() => {
-                            row.remove();
-                            this.checkAndRenderEmptyRow();
-                        }, 500);
-                    }, 1200);
-
-                } catch (err) {
-                    console.error('Failed processing item in loop:', err);
-                    row.className = "bg-red-50/30 transition duration-150";
-                    processBtn.disabled = false;
-                    deleteBtn.disabled = false;
-                    picker.disabled = false;
-                    processBtn.className = "px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded-lg text-xs font-bold shadow-sm transition duration-150 inline-flex items-center space-x-1";
-                    processBtn.innerHTML = originalBtnHTML;
-                    lucide.createIcons();
-                    failCount++;
-                }
-
-                // 稍微延迟，以便连续处理时UI平滑
-                await new Promise(resolve => setTimeout(resolve, 800));
+        const processWorker = async (t) => {
+            const date = t.picker.value;
+            if (!this.isValidDate(date)) {
+                t.row.className = "bg-red-50/30 transition duration-150";
+                failCount++;
+                return;
             }
 
+            t.processBtn.disabled = true;
+            t.deleteBtn.disabled = true;
+            t.picker.disabled = true;
+
+            const originalBtnHTML = t.processBtn.innerHTML;
+            t.processBtn.className = "px-3 py-1 bg-red-400 text-white rounded-lg text-xs font-bold shadow-sm inline-flex items-center space-x-1 cursor-not-allowed";
+            t.processBtn.innerHTML = `<div class="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div> <span>解析中...</span>`;
+            t.row.className = "bg-blue-50/30 transition duration-150";
+
+            try {
+                let data;
+                const ext = t.key.split('.').pop().toLowerCase();
+                const mimeMap = { 'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'webp': 'image/webp', 'png': 'image/png' };
+                const mimeType = mimeMap[ext] || 'image/png';
+
+                const localMarkdown = await this.ocrWithLocalProxy(t.key, mimeType);
+
+                if (localMarkdown) {
+                    console.log("Using decentralized local proxy OCR result.");
+                    data = await api.commitParsedMarkdown(t.key, date, localMarkdown);
+                } else {
+                    console.log("Fallback to cloud worker proxy OCR.");
+                    data = await api.processPendingImage(t.key, date);
+                }
+
+                if (data.error) {
+                    throw new Error(data.message || data.error);
+                }
+
+                t.row.className = "bg-emerald-50/30 transition duration-150";
+                t.processBtn.className = "px-3 py-1 bg-emerald-500 text-white rounded-lg text-xs font-bold shadow-sm inline-flex items-center space-x-1";
+                t.processBtn.innerHTML = `<i data-lucide="check" class="w-3.5 h-3.5"></i> <span>解析成功</span>`;
+                lucide.createIcons();
+
+                successCount++;
+
+                setTimeout(() => {
+                    t.row.classList.add('transition-opacity', 'duration-500', 'opacity-0');
+                    setTimeout(() => {
+                        t.row.remove();
+                        this.checkAndRenderEmptyRow();
+                    }, 500);
+                }, 1200);
+
+            } catch (err) {
+                console.error('Failed processing item in loop:', err);
+                t.row.className = "bg-red-50/30 transition duration-150";
+                t.processBtn.disabled = false;
+                t.deleteBtn.disabled = false;
+                t.picker.disabled = false;
+                t.processBtn.className = "px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded-lg text-xs font-bold shadow-sm transition duration-150 inline-flex items-center space-x-1";
+                t.processBtn.innerHTML = originalBtnHTML;
+                lucide.createIcons();
+                failCount++;
+            }
+        };
+
+        try {
+            // 通过 limitConcurrency 并发池一键并行解析，摆脱死循环人工等待延迟
+            await this.limitConcurrency(tasks, concurrencyLimit, processWorker);
+
             await this.app.reloadSummaries();
-            alert(`一键顺序处理完成！\n成功：${successCount} 个\n失败：${failCount} 个`);
+            alert(`一键并行处理完成！\n成功：${successCount} 个\n失败：${failCount} 个`);
         } catch (err) {
             console.error('Error during one-key processing loop:', err);
             alert(`批量顺序处理出现异常: ${err.message || err}`);
@@ -717,6 +730,23 @@ export class UploadTab {
         const sizes = ['Bytes', 'KB', 'MB'];
         const i = Math.floor(Math.log(bytes) / Math.log(k));
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    async limitConcurrency(tasks, limit, fn) {
+        let index = 0;
+        const runNext = async () => {
+            if (index >= tasks.length) return;
+            const currentIdx = index++;
+            const task = tasks[currentIdx];
+            await fn(task);
+            await runNext();
+        };
+
+        const workers = [];
+        for (let i = 0; i < Math.min(limit, tasks.length); i++) {
+            workers.push(runNext());
+        }
+        await Promise.all(workers);
     }
 
     openPreviewModal(key, title) {
