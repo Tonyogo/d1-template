@@ -3,6 +3,7 @@ import { api } from '../api.js';
 export class UploadTab {
     constructor(app) {
         this.app = app;
+        this.isCancelRequested = false;
         this.initDOM();
         this.initProxyDOM();
         this.loadPendingQueue();
@@ -558,7 +559,16 @@ export class UploadTab {
     }
 
     async processAllPending() {
-        if (this.isProcessing) return;
+        if (this.isProcessing) {
+            if (!this.isCancelRequested) {
+                this.isCancelRequested = true;
+                this.pendingProcessAllBtn.setAttribute('disabled', 'true');
+                this.pendingProcessAllBtn.className = "px-4 py-1.5 bg-slate-400 text-white rounded-lg text-xs font-bold shadow-sm cursor-not-allowed flex items-center space-x-1.5";
+                this.pendingProcessAllBtn.innerHTML = `<div class="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white"></div> <span>正在优雅停止...</span>`;
+                console.log("User requested cancel. Stopping processAllPending gracefully...");
+            }
+            return;
+        }
 
         const rows = Array.from(this.pendingTbody.querySelectorAll('tr[id^="pending-row-"]'));
         if (rows.length === 0) {
@@ -573,7 +583,12 @@ export class UploadTab {
         }
 
         this.isProcessing = true;
+        this.isCancelRequested = false; // 重设状态
         this.togglePendingControls(false);
+
+        // 按钮自切换为 `🛑 停止处理` 红色高亮状态
+        this.pendingProcessAllBtn.className = "px-4 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-bold shadow-sm transition duration-150 flex items-center space-x-1.5";
+        this.pendingProcessAllBtn.innerHTML = `<span>🛑 停止处理</span>`;
 
         let successCount = 0;
         let failCount = 0;
@@ -656,12 +671,17 @@ export class UploadTab {
             await this.limitConcurrency(tasks, concurrencyLimit, processWorker);
 
             await this.app.reloadSummaries();
-            alert(`一键并行处理完成！\n成功：${successCount} 个\n失败：${failCount} 个`);
+            if (this.isCancelRequested) {
+                alert(`一键并行处理已中止！\n已成功：${successCount} 个\n失败：${failCount} 个\n未处理的任务已保持在队列中。`);
+            } else {
+                alert(`一键并行处理完成！\n成功：${successCount} 个\n失败：${failCount} 个`);
+            }
         } catch (err) {
             console.error('Error during one-key processing loop:', err);
             alert(`批量顺序处理出现异常: ${err.message || err}`);
         } finally {
             this.isProcessing = false;
+            this.isCancelRequested = false;
             this.togglePendingControls(true);
         }
     }
@@ -689,18 +709,28 @@ export class UploadTab {
 
     togglePendingControls(enabled) {
         this.dropZone.style.pointerEvents = enabled ? 'auto' : 'none';
+        if (this.concurrencySelect) {
+            if (enabled) {
+                this.concurrencySelect.removeAttribute('disabled');
+                this.concurrencySelect.classList.remove('opacity-50', 'cursor-not-allowed');
+            } else {
+                this.concurrencySelect.setAttribute('disabled', 'true');
+                this.concurrencySelect.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+        }
         if (enabled) {
             this.dropZone.classList.remove('opacity-50');
             this.pendingRefreshBtn.removeAttribute('disabled');
             this.pendingRefreshBtn.classList.remove('opacity-50', 'cursor-not-allowed');
             this.pendingProcessAllBtn.removeAttribute('disabled');
             this.pendingProcessAllBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            this.pendingProcessAllBtn.className = "px-4 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg text-xs font-bold shadow-sm transition duration-150 flex items-center space-x-1.5";
+            this.pendingProcessAllBtn.innerHTML = `<i data-lucide="play" class="w-3.5 h-3.5"></i> <span>一键并行处理</span>`;
+            lucide.createIcons();
         } else {
             this.dropZone.classList.add('opacity-50');
             this.pendingRefreshBtn.setAttribute('disabled', 'true');
             this.pendingRefreshBtn.classList.add('opacity-50', 'cursor-not-allowed');
-            this.pendingProcessAllBtn.setAttribute('disabled', 'true');
-            this.pendingProcessAllBtn.classList.add('opacity-50', 'cursor-not-allowed');
         }
     }
 
@@ -735,6 +765,7 @@ export class UploadTab {
     async limitConcurrency(tasks, limit, fn) {
         let index = 0;
         const runNext = async () => {
+            if (this.isCancelRequested) return;
             if (index >= tasks.length) return;
             const currentIdx = index++;
             const task = tasks[currentIdx];
