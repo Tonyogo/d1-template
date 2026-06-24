@@ -1,19 +1,15 @@
 import { StockRepository } from '../repositories/stock.repository';
+import { SummaryRepository } from '../repositories/summary.repository';
 
 export class ActiveService {
-	constructor(private stockRepo: StockRepository) {}
+	constructor(
+		private stockRepo: StockRepository,
+		private summaryRepo: SummaryRepository
+	) {}
 
 	async getActiveSectorsList(daysParam: string) {
-		let datesQuery = "SELECT date FROM daily_summary ORDER BY date DESC";
-		const datesParams: any[] = [];
-		if (daysParam !== "all") {
-			const limitVal = parseInt(daysParam, 10) || 30;
-			datesQuery += " LIMIT ?";
-			datesParams.push(limitVal);
-		}
-
-		const { results: dateRows } = await this.stockRepo.db.prepare(datesQuery).bind(...datesParams).all<{ date: string }>();
-		const targetDates = (dateRows || []).map(r => r.date);
+		const limitVal = daysParam !== "all" ? (parseInt(daysParam, 10) || 30) : undefined;
+		const targetDates = await this.summaryRepo.getLatestDates(limitVal);
 
 		if (targetDates.length === 0) {
 			return [];

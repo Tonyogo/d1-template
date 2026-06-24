@@ -94,60 +94,13 @@ export class UploadService {
 		const rawMarkdown = await GeminiClient.callGeminiOCR(imageBlob, mimeType, this.env);
 		const { summary, sectorsAndStocks } = OcrParser.parseOcrMarkdown(rawMarkdown);
 
-		// 3. 多表级联 D1 批量事务写入
-		const db = this.summaryRepo.db;
-		const del1 = db.prepare("DELETE FROM limit_up_stocks WHERE date = ?").bind(date);
-		const del2 = db.prepare("DELETE FROM sectors WHERE date = ?").bind(date);
-		const del3 = db.prepare("DELETE FROM daily_summary WHERE date = ?").bind(date);
-
-		const insSummary = db.prepare(`
-			INSERT INTO daily_summary (date, stock_count, upgrade_rate, limit_broken_rate, bidding_increase_rate)
-			VALUES (?, ?, ?, ?, ?)
-		`).bind(
+		// 3. 多表级联 D1 批量事务写入 (Delegated to SummaryRepository)
+		const { sectorsCount, stocksCount } = await this.summaryRepo.saveReviewData(
 			date,
-			summary.stock_count,
-			summary.upgrade_rate,
-			summary.limit_broken_rate,
-			summary.bidding_increase_rate
+			summary,
+			sectorsAndStocks,
+			this.sectorRepo
 		);
-
-		const insSectors = sectorsAndStocks.map(sec =>
-			db.prepare(`
-				INSERT INTO sectors (date, name, description)
-				VALUES (?, ?, ?)
-			`).bind(date, sec.name, sec.description || null)
-		);
-
-		await db.batch([del1, del2, del3, insSummary, ...insSectors]);
-
-		const sectorIdMap = await this.sectorRepo.getSectorIdMap(date);
-		const stockStatements: any[] = [];
-		let stocksCount = 0;
-
-		for (const sec of sectorsAndStocks) {
-			const sectorId = sectorIdMap[sec.name] || null;
-			for (const stock of sec.stocks) {
-				stockStatements.push(
-					db.prepare(`
-						INSERT INTO limit_up_stocks (date, status, code, name, time, concept_reason, sector_id)
-						VALUES (?, ?, ?, ?, ?, ?, ?)
-					`).bind(
-						date,
-						stock.status,
-						stock.code,
-						stock.name,
-						stock.time,
-						stock.concept_reason,
-						sectorId
-					)
-				);
-				stocksCount++;
-			}
-		}
-
-		if (stockStatements.length > 0) {
-			await db.batch(stockStatements);
-		}
 
 		// 4. 将图片重命名移动 to 正式归档目录，并彻底安全删除 images/pending/ 下的原图
 		const fileExtension = key.split('.').pop() || 'png';
@@ -183,7 +136,7 @@ export class UploadService {
 				...summary,
 				date
 			},
-			sectorsCount: sectorsAndStocks.length,
+			sectorsCount,
 			stocksCount,
 			rawMarkdown
 		};
@@ -208,60 +161,13 @@ export class UploadService {
 		// 1. OcrParser 智能提取
 		const { summary, sectorsAndStocks } = OcrParser.parseOcrMarkdown(rawMarkdown);
 
-		// 2. 多表级联 D1 批量事务写入
-		const db = this.summaryRepo.db;
-		const del1 = db.prepare("DELETE FROM limit_up_stocks WHERE date = ?").bind(date);
-		const del2 = db.prepare("DELETE FROM sectors WHERE date = ?").bind(date);
-		const del3 = db.prepare("DELETE FROM daily_summary WHERE date = ?").bind(date);
-
-		const insSummary = db.prepare(`
-			INSERT INTO daily_summary (date, stock_count, upgrade_rate, limit_broken_rate, bidding_increase_rate)
-			VALUES (?, ?, ?, ?, ?)
-		`).bind(
+		// 2. 多表级联 D1 批量事务写入 (Delegated to SummaryRepository)
+		const { sectorsCount, stocksCount } = await this.summaryRepo.saveReviewData(
 			date,
-			summary.stock_count,
-			summary.upgrade_rate,
-			summary.limit_broken_rate,
-			summary.bidding_increase_rate
+			summary,
+			sectorsAndStocks,
+			this.sectorRepo
 		);
-
-		const insSectors = sectorsAndStocks.map(sec =>
-			db.prepare(`
-				INSERT INTO sectors (date, name, description)
-				VALUES (?, ?, ?)
-			`).bind(date, sec.name, sec.description || null)
-		);
-
-		await db.batch([del1, del2, del3, insSummary, ...insSectors]);
-
-		const sectorIdMap = await this.sectorRepo.getSectorIdMap(date);
-		const stockStatements: any[] = [];
-		let stocksCount = 0;
-
-		for (const sec of sectorsAndStocks) {
-			const sectorId = sectorIdMap[sec.name] || null;
-			for (const stock of sec.stocks) {
-				stockStatements.push(
-					db.prepare(`
-						INSERT INTO limit_up_stocks (date, status, code, name, time, concept_reason, sector_id)
-						VALUES (?, ?, ?, ?, ?, ?, ?)
-					`).bind(
-						date,
-						stock.status,
-						stock.code,
-						stock.name,
-						stock.time,
-						stock.concept_reason,
-						sectorId
-					)
-				);
-				stocksCount++;
-			}
-		}
-
-		if (stockStatements.length > 0) {
-			await db.batch(stockStatements);
-		}
 
 		// 3. 将图片重命名移动到正式归档目录，并彻底安全删除 images/pending/ 下的原图
 		const fileExtension = key.split('.').pop() || 'png';
@@ -294,7 +200,7 @@ export class UploadService {
 				...summary,
 				date
 			},
-			sectorsCount: sectorsAndStocks.length,
+			sectorsCount,
 			stocksCount,
 			rawMarkdown
 		};
@@ -320,60 +226,13 @@ export class UploadService {
 		// 1. 调用 OcrParser 再次对最新手动修改的文本进行解析与清洗
 		const { summary, sectorsAndStocks } = OcrParser.parseOcrMarkdown(rawMarkdown);
 
-		// 2. 多表级联 D1 批量事务写入
-		const db = this.summaryRepo.db;
-		const del1 = db.prepare("DELETE FROM limit_up_stocks WHERE date = ?").bind(date);
-		const del2 = db.prepare("DELETE FROM sectors WHERE date = ?").bind(date);
-		const del3 = db.prepare("DELETE FROM daily_summary WHERE date = ?").bind(date);
-
-		const insSummary = db.prepare(`
-			INSERT INTO daily_summary (date, stock_count, upgrade_rate, limit_broken_rate, bidding_increase_rate)
-			VALUES (?, ?, ?, ?, ?)
-		`).bind(
+		// 2. 多表级联 D1 批量事务写入 (Delegated to SummaryRepository)
+		const { sectorsCount, stocksCount } = await this.summaryRepo.saveReviewData(
 			date,
-			summary.stock_count,
-			summary.upgrade_rate,
-			summary.limit_broken_rate,
-			summary.bidding_increase_rate
+			summary,
+			sectorsAndStocks,
+			this.sectorRepo
 		);
-
-		const insSectors = sectorsAndStocks.map(sec =>
-			db.prepare(`
-				INSERT INTO sectors (date, name, description)
-				VALUES (?, ?, ?)
-			`).bind(date, sec.name, sec.description || null)
-		);
-
-		await db.batch([del1, del2, del3, insSummary, ...insSectors]);
-
-		const sectorIdMap = await this.sectorRepo.getSectorIdMap(date);
-		const stockStatements: any[] = [];
-		let stocksCount = 0;
-
-		for (const sec of sectorsAndStocks) {
-			const sectorId = sectorIdMap[sec.name] || null;
-			for (const stock of sec.stocks) {
-				stockStatements.push(
-					db.prepare(`
-						INSERT INTO limit_up_stocks (date, status, code, name, time, concept_reason, sector_id)
-						VALUES (?, ?, ?, ?, ?, ?, ?)
-					`).bind(
-						date,
-						stock.status,
-						stock.code,
-						stock.name,
-						stock.time,
-						stock.concept_reason,
-						sectorId
-					)
-				);
-				stocksCount++;
-			}
-		}
-
-		if (stockStatements.length > 0) {
-			await db.batch(stockStatements);
-		}
 
 		// 3. 覆盖 R2 中的 Markdown 备份
 		const mdKey = `markdowns/${date}.md`;
@@ -389,7 +248,7 @@ export class UploadService {
 				...summary,
 				date
 			},
-			sectorsCount: sectorsAndStocks.length,
+			sectorsCount,
 			stocksCount
 		};
 	}

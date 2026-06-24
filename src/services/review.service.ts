@@ -10,11 +10,7 @@ export class ReviewService {
 	) {}
 
 	async getReviewDetails(date: string) {
-		const summary = await this.summaryRepo.db.prepare(`
-			SELECT date, stock_count, upgrade_rate, limit_broken_rate, bidding_increase_rate
-			FROM daily_summary
-			WHERE date = ?
-		`).bind(date).first<any>();
+		const summary = await this.summaryRepo.getByDate(date);
 
 		if (!summary) {
 			return null;
