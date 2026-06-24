@@ -10,8 +10,13 @@ export async function handleCallback(c: Context) {
 		// 飞书 2.0 事件的 Token 位于 header.token，1.0/首次挑战的 Token 位于最外层 body.token
 		const requestToken = body?.header?.token || body?.token;
 
-		// 如果配置了本地 Token，则必须执行强校验阻断非合法请求
-		if (verificationToken && requestToken !== verificationToken) {
+		// 生产/线上环境下必须强配置 Token。如果漏配，直接以 403 阻断以防伪造攻击。
+		if (!verificationToken) {
+			console.error("[FeishuCallback] FEISHU_VERIFICATION_TOKEN is not configured in environment variables!");
+			return c.json({ error: "Unauthorized: Server misconfigured" }, 403);
+		}
+
+		if (requestToken !== verificationToken) {
 			console.warn("[FeishuCallback] Token mismatch! Unauthorized access attempt blocked.");
 			return c.json({ error: "Unauthorized: Token mismatch" }, 401);
 		}
