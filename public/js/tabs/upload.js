@@ -286,14 +286,12 @@ export class UploadTab {
 
         try {
             this.pendingTbody.innerHTML = `
-                <tr>
-                    <td colspan="5" class="text-center py-8 text-slate-400">
-                        <div class="flex flex-col items-center justify-center space-y-2">
-                            <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-red-500"></div>
-                            <span class="text-xs">正在加载暂存队列...</span>
-                        </div>
-                    </td>
-                </tr>
+                <div class="text-center py-12 text-slate-400">
+                    <div class="flex flex-col items-center justify-center space-y-2">
+                        <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-red-500"></div>
+                        <span class="text-xs font-semibold">正在加载暂存队列...</span>
+                    </div>
+                </div>
             `;
             lucide.createIcons();
 
@@ -307,19 +305,17 @@ export class UploadTab {
 
             if (!pendingImages || pendingImages.length === 0) {
                 this.pendingTbody.innerHTML = `
-                    <tr id="pending-empty-row">
-                        <td colspan="5" class="text-center py-16 text-slate-400">
-                            <div class="flex flex-col items-center justify-center space-y-3">
-                                <div class="p-3 bg-slate-50 rounded-full text-slate-300 border border-slate-100">
-                                    <i data-lucide="inbox" class="w-10 h-10 text-slate-300"></i>
-                                </div>
-                                <div class="text-sm font-semibold text-slate-600">云端暂存队列为空</div>
-                                <p class="text-xs text-slate-400 max-w-xs leading-relaxed">
-                                    您可以拖拽或选择多个复盘长图到上方区域进行“极速云暂存”，然后再到此处统一进行智能解析与 D1 入库。
-                                </p>
+                    <div id="pending-empty-row" class="text-center py-16 text-slate-400">
+                        <div class="flex flex-col items-center justify-center space-y-3">
+                            <div class="p-3 bg-slate-50 rounded-full text-slate-300 border border-slate-100">
+                                <i data-lucide="inbox" class="w-10 h-10 text-slate-300"></i>
                             </div>
-                        </td>
-                    </tr>
+                            <div class="text-sm font-semibold text-slate-600">云端暂存队列为空</div>
+                            <p class="text-xs text-slate-400 max-w-xs leading-relaxed mx-auto px-4">
+                                您可以拖拽或选择多个复盘长图到上方区域进行“极速云暂存”，然后再到此处统一进行智能解析与 D1 入库。
+                            </p>
+                        </div>
+                    </div>
                 `;
                 lucide.createIcons();
                 return;
@@ -334,93 +330,87 @@ export class UploadTab {
         } catch (err) {
             console.error('Failed to load pending queue:', err);
             this.pendingTbody.innerHTML = `
-                <tr>
-                    <td colspan="5" class="text-center py-8 text-red-500 font-semibold text-xs">
-                        加载暂存队列失败: ${err.message || err}
-                    </td>
-                </tr>
+                <div class="text-center py-12 text-red-500 font-semibold text-xs bg-red-50/50 rounded-xl border border-red-100 m-4">
+                    加载暂存队列失败: ${err.message || err}
+                </div>
             `;
             lucide.createIcons();
         }
     }
 
     renderPendingRow(img) {
-        const tr = document.createElement('tr');
-        tr.id = `pending-row-${img.key.replace(/[\/.]/g, '-')}`;
-        tr.setAttribute('data-key', img.key);
-        // 核心：移动端采用 Flex 卡片流布局，桌面端采用标准 table-row
-        tr.className = "flex flex-col md:table-row p-4 md:p-3 mb-4 md:mb-0 border border-slate-200 md:border-0 rounded-2xl md:rounded-none bg-white md:bg-transparent shadow-sm md:shadow-none hover:bg-slate-50/50 transition-all duration-150 gap-3 md:gap-0";
+        const row = document.createElement('div');
+        row.id = `pending-row-${img.key.replace(/[\/.]/g, '-')}`;
+        row.setAttribute('data-key', img.key);
+        // 核心：移动端是一个精致独立的卡片；桌面端是一个网格行
+        row.className = "flex flex-col md:grid md:grid-cols-12 md:gap-4 md:items-center p-5 md:px-6 md:py-4 bg-white hover:bg-slate-50/50 transition duration-150 gap-4 md:gap-0 border-b border-slate-100";
 
         const sizeStr = this.formatFileSize(img.size);
         const formattedTime = new Date(img.uploadedAt).toLocaleString('zh-CN');
         const suggestedDateVal = img.suggestedDate || this.getTodayDateString();
+        const statusBadge = this.getStatusBadgeHTML(img);
 
-        tr.innerHTML = `
-            <!-- 1. 缩略图与文件名、档案细节（移动端整合排布，桌面端分立） -->
-            <td class="px-0 py-0 md:px-4 md:py-3 md:w-24">
-                <div class="flex items-center space-x-3.5 md:block">
-                    <!-- 缩略图 -->
-                    <div class="w-14 h-14 md:w-12 md:h-12 rounded-xl md:rounded overflow-hidden border border-slate-200 cursor-zoom-in bg-slate-100 flex items-center justify-center transition hover:opacity-80 shrink-0">
-                        <img src="/api/pending-image?key=${encodeURIComponent(img.key)}" class="w-full h-full object-cover">
-                    </div>
-                    <!-- 移动端专享：展示在缩略图右侧 -->
-                    <div class="block md:hidden min-w-0 flex-1">
-                        <div class="text-sm font-bold text-slate-800 truncate" title="${img.originalName}">${img.originalName}</div>
-                        <div class="text-[10px] text-slate-400 mt-1 flex items-center space-x-2">
-                            <span>大小: ${sizeStr}</span>
-                            <span class="text-slate-300">|</span>
-                            <span>${formattedTime}</span>
-                        </div>
+        row.innerHTML = `
+            <!-- 1. 缩略图列 (PC 占 2 列) -->
+            <div class="col-span-2 flex items-center space-x-3.5 md:space-x-0">
+                <div class="w-16 h-16 md:w-12 md:h-12 rounded-xl md:rounded overflow-hidden border border-slate-200 cursor-zoom-in bg-slate-100 flex items-center justify-center transition hover:opacity-80 shrink-0">
+                    <img src="/api/pending-image?key=${encodeURIComponent(img.key)}" class="w-full h-full object-cover">
+                </div>
+                <!-- 移动端档案区 (只在手机端显示) -->
+                <div class="block md:hidden min-w-0 flex-1">
+                    <div class="text-sm font-black text-slate-800 truncate" title="${img.originalName}">${img.originalName}</div>
+                    <div class="text-[10px] text-slate-400 mt-1 flex items-center space-x-2">
+                        <span>大小: ${sizeStr}</span>
+                        <span class="text-slate-300">|</span>
+                        <span>${formattedTime}</span>
                     </div>
                 </div>
-            </td>
+            </div>
 
-            <!-- 2. 桌面端的文件信息列 -->
-            <td class="hidden md:table-cell px-4 py-3">
-                <div class="text-sm font-semibold text-slate-800 max-w-xs truncate" title="${img.originalName}">${img.originalName}</div>
+            <!-- 2. 文件信息列 (PC 占 4 列) -->
+            <div class="hidden md:block col-span-4 min-w-0">
+                <div class="text-sm font-semibold text-slate-800 truncate" title="${img.originalName}">${img.originalName}</div>
                 <div class="text-xxs text-slate-400 mt-0.5">上传时间: ${formattedTime}</div>
-            </td>
+            </div>
 
-            <!-- 3. 目标日期日期选择器 -->
-            <td class="px-0 py-0 md:px-4 md:py-3 md:w-48">
+            <!-- 3. 日期选择器 (PC 占 3 列) -->
+            <div class="col-span-3">
                 <div class="space-y-1.5 md:space-y-0">
                     <div class="md:hidden text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">目标复盘日期</div>
-                    <input type="date" value="${suggestedDateVal}" class="pending-date-input w-full md:w-auto px-3 py-2 md:px-2 md:py-1 border border-slate-300 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-slate-50 text-slate-900">
+                    <input type="date" value="${suggestedDateVal}" class="pending-date-input w-full px-3 py-2 md:px-2 md:py-1 border border-slate-300 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-slate-50 text-slate-900">
                 </div>
-            </td>
+            </div>
 
-            <!-- 4. 桌面端的文件大小列 -->
-            <td class="hidden md:table-cell px-4 py-3 text-xs text-slate-500 md:w-28">
+            <!-- 4. 文件大小列 (PC 占 1 列) -->
+            <div class="hidden md:block col-span-1 text-xs text-slate-500 font-mono">
                 ${sizeStr}
-            </td>
+            </div>
 
-            <!-- 5. 状态与操作列（移动端横排分发，桌面端对齐） -->
-            <td class="px-0 py-0 md:px-4 md:py-3 text-right md:w-44">
-                <div class="flex items-center justify-between md:justify-end gap-2 mt-1.5 md:mt-0">
+            <!-- 5. 操作列 (PC 占 2 列) -->
+            <div class="col-span-2">
+                <div class="flex items-center justify-between md:justify-end gap-3 mt-1 md:mt-0">
                     <!-- 移动端专享状态栏 -->
-                    <div class="mobile-status-container md:hidden flex items-center">
-                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
-                            <span class="w-1.5 h-1.5 mr-1.5 rounded-full bg-slate-400"></span>待处理
-                        </span>
+                    <div class="mobile-status-container md:hidden flex items-center shrink-0">
+                        ${statusBadge}
                     </div>
                     <!-- 控制按键（移动端撑满，手感极佳） -->
                     <div class="flex items-center space-x-2 shrink-0 w-full md:w-auto justify-end">
-                        <button class="process-item-btn flex-1 md:flex-none justify-center px-4 py-2 md:px-3 md:py-1 bg-red-500 hover:bg-red-600 text-white rounded-xl text-xs font-bold shadow-sm transition duration-150 inline-flex items-center space-x-1">
+                        <button class="process-item-btn flex-1 md:flex-none justify-center px-4 py-2.5 md:px-3 md:py-1 bg-red-500 hover:bg-red-600 text-white rounded-xl text-xs font-bold shadow-sm transition duration-150 inline-flex items-center space-x-1">
                             <i data-lucide="play" class="w-3.5 h-3.5"></i>
                             <span>解析入库</span>
                         </button>
-                        <button class="delete-item-btn p-2 md:px-2.5 md:py-1 border border-slate-200 hover:bg-slate-50 text-slate-400 hover:text-red-500 rounded-xl text-xs font-semibold transition duration-150 inline-flex items-center">
+                        <button class="delete-item-btn p-2.5 md:p-1.5 border border-slate-200 hover:bg-slate-50 text-slate-400 hover:text-red-500 rounded-xl text-xs font-semibold transition duration-150 inline-flex items-center">
                             <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                         </button>
                     </div>
                 </div>
-            </td>
+            </div>
         `;
 
-        const thumbWrap = tr.querySelector('.cursor-zoom-in');
-        const dateInput = tr.querySelector('.pending-date-input');
-        const processBtn = tr.querySelector('.process-item-btn');
-        const deleteBtn = tr.querySelector('.delete-item-btn');
+        const thumbWrap = row.querySelector('.cursor-zoom-in');
+        const dateInput = row.querySelector('.pending-date-input');
+        const processBtn = row.querySelector('.process-item-btn');
+        const deleteBtn = row.querySelector('.delete-item-btn');
 
         // 绑定缩略图点击放大
         thumbWrap.addEventListener('click', () => {
@@ -434,17 +424,17 @@ export class UploadTab {
                 alert('请选择或输入有效的复盘日期！');
                 return;
             }
-            await this.processSinglePendingItem(img.key, dateVal, tr, processBtn, deleteBtn);
+            await this.processSinglePendingItem(img.key, dateVal, row, processBtn, deleteBtn);
         });
 
         // 绑定物理丢弃暂存
         deleteBtn.addEventListener('click', async () => {
             if (confirm(`确定要丢弃该暂存文件吗？\n文件名: ${img.originalName}`)) {
-                await this.deleteSinglePendingItem(img.key, tr, processBtn, deleteBtn);
+                await this.deleteSinglePendingItem(img.key, row, processBtn, deleteBtn);
             }
         });
 
-        return tr;
+        return row;
     }
 
     async processSinglePendingItem(key, date, rowElement, processBtn, deleteBtn) {
@@ -747,21 +737,19 @@ export class UploadTab {
     }
 
     checkAndRenderEmptyRow() {
-        if (this.pendingTbody.querySelectorAll('tr[id^="pending-row-"]').length === 0) {
+        if (this.pendingTbody.querySelectorAll('div[id^="pending-row-"]').length === 0) {
             this.pendingTbody.innerHTML = `
-                <tr id="pending-empty-row">
-                    <td colspan="5" class="text-center py-16 text-slate-400">
-                        <div class="flex flex-col items-center justify-center space-y-3">
-                            <div class="p-3 bg-slate-50 rounded-full text-slate-300 border border-slate-100">
-                                <i data-lucide="inbox" class="w-10 h-10 text-slate-300"></i>
-                            </div>
-                            <div class="text-sm font-semibold text-slate-600">云端暂存队列为空</div>
-                            <p class="text-xs text-slate-400 max-w-xs leading-relaxed">
-                                您您可以拖拽或选择多个复盘长图到上方区域进行“极速云暂存”，然后再到此处统一进行智能解析与 D1 入库。
-                            </p>
+                <div id="pending-empty-row" class="text-center py-16 text-slate-400">
+                    <div class="flex flex-col items-center justify-center space-y-3">
+                        <div class="p-3 bg-slate-50 rounded-full text-slate-300 border border-slate-100">
+                            <i data-lucide="inbox" class="w-10 h-10 text-slate-300"></i>
                         </div>
-                    </td>
-                </tr>
+                        <div class="text-sm font-semibold text-slate-600">云端暂存队列为空</div>
+                        <p class="text-xs text-slate-400 max-w-xs leading-relaxed mx-auto px-4">
+                            您可以拖拽或选择多个复盘长图到上方区域进行“极速云暂存”，然后再到此处统一进行智能解析与 D1 入库。
+                        </p>
+                    </div>
+                </div>
             `;
             lucide.createIcons();
         }
