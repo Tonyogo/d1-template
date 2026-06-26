@@ -24,7 +24,7 @@
 		"enabled": true
 	},
 	"vars": {
-		"GEMINI_API_BASE": "https://generativelanguage.googleapis.com",
+		"GEMINI_API_BASE": "https://gemini.yatao.cc.cd",
 		"GEMINI_MODEL": "gemini-flash-latest"
 	}
 }
