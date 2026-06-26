@@ -348,74 +348,86 @@ export class UploadTab {
         const tr = document.createElement('tr');
         tr.id = `pending-row-${img.key.replace(/[\/.]/g, '-')}`;
         tr.setAttribute('data-key', img.key);
-        tr.className = "hover:bg-slate-50/50 transition duration-150";
+        // 核心：移动端采用 Flex 卡片流布局，桌面端采用标准 table-row
+        tr.className = "flex flex-col md:table-row p-4 md:p-3 mb-4 md:mb-0 border border-slate-200 md:border-0 rounded-2xl md:rounded-none bg-white md:bg-transparent shadow-sm md:shadow-none hover:bg-slate-50/50 transition-all duration-150 gap-3 md:gap-0";
 
-        // 1. 缩略图
-        const tdThumb = document.createElement('td');
-        tdThumb.className = "px-4 py-3";
-        const thumbDiv = document.createElement('div');
-        thumbDiv.className = "w-12 h-12 rounded overflow-hidden border border-slate-200 cursor-zoom-in bg-slate-100 flex items-center justify-center transition hover:opacity-80";
+        const sizeStr = this.formatFileSize(img.size);
+        const formattedTime = new Date(img.uploadedAt).toLocaleString('zh-CN');
+        const suggestedDateVal = img.suggestedDate || this.getTodayDateString();
 
-        const thumbImg = document.createElement('img');
-        thumbImg.src = `/api/pending-image?key=${encodeURIComponent(img.key)}`;
-        thumbImg.className = "w-full h-full object-cover";
+        tr.innerHTML = `
+            <!-- 1. 缩略图与文件名、档案细节（移动端整合排布，桌面端分立） -->
+            <td class="px-0 py-0 md:px-4 md:py-3 md:w-24">
+                <div class="flex items-center space-x-3.5 md:block">
+                    <!-- 缩略图 -->
+                    <div class="w-14 h-14 md:w-12 md:h-12 rounded-xl md:rounded overflow-hidden border border-slate-200 cursor-zoom-in bg-slate-100 flex items-center justify-center transition hover:opacity-80 shrink-0">
+                        <img src="/api/pending-image?key=${encodeURIComponent(img.key)}" class="w-full h-full object-cover">
+                    </div>
+                    <!-- 移动端专享：展示在缩略图右侧 -->
+                    <div class="block md:hidden min-w-0 flex-1">
+                        <div class="text-sm font-bold text-slate-800 truncate" title="${img.originalName}">${img.originalName}</div>
+                        <div class="text-[10px] text-slate-400 mt-1 flex items-center space-x-2">
+                            <span>大小: ${sizeStr}</span>
+                            <span class="text-slate-300">|</span>
+                            <span>${formattedTime}</span>
+                        </div>
+                    </div>
+                </div>
+            </td>
 
-        thumbDiv.addEventListener('click', () => {
+            <!-- 2. 桌面端的文件信息列 -->
+            <td class="hidden md:table-cell px-4 py-3">
+                <div class="text-sm font-semibold text-slate-800 max-w-xs truncate" title="${img.originalName}">${img.originalName}</div>
+                <div class="text-xxs text-slate-400 mt-0.5">上传时间: ${formattedTime}</div>
+            </td>
+
+            <!-- 3. 目标日期日期选择器 -->
+            <td class="px-0 py-0 md:px-4 md:py-3 md:w-48">
+                <div class="space-y-1.5 md:space-y-0">
+                    <div class="md:hidden text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">目标复盘日期</div>
+                    <input type="date" value="${suggestedDateVal}" class="pending-date-input w-full md:w-auto px-3 py-2 md:px-2 md:py-1 border border-slate-300 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-slate-50 text-slate-900">
+                </div>
+            </td>
+
+            <!-- 4. 桌面端的文件大小列 -->
+            <td class="hidden md:table-cell px-4 py-3 text-xs text-slate-500 md:w-28">
+                ${sizeStr}
+            </td>
+
+            <!-- 5. 状态与操作列（移动端横排分发，桌面端对齐） -->
+            <td class="px-0 py-0 md:px-4 md:py-3 text-right md:w-44">
+                <div class="flex items-center justify-between md:justify-end gap-2 mt-1.5 md:mt-0">
+                    <!-- 移动端专享状态栏 -->
+                    <div class="mobile-status-container md:hidden flex items-center">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
+                            <span class="w-1.5 h-1.5 mr-1.5 rounded-full bg-slate-400"></span>待处理
+                        </span>
+                    </div>
+                    <!-- 控制按键（移动端撑满，手感极佳） -->
+                    <div class="flex items-center space-x-2 shrink-0 w-full md:w-auto justify-end">
+                        <button class="process-item-btn flex-1 md:flex-none justify-center px-4 py-2 md:px-3 md:py-1 bg-red-500 hover:bg-red-600 text-white rounded-xl text-xs font-bold shadow-sm transition duration-150 inline-flex items-center space-x-1">
+                            <i data-lucide="play" class="w-3.5 h-3.5"></i>
+                            <span>解析入库</span>
+                        </button>
+                        <button class="delete-item-btn p-2 md:px-2.5 md:py-1 border border-slate-200 hover:bg-slate-50 text-slate-400 hover:text-red-500 rounded-xl text-xs font-semibold transition duration-150 inline-flex items-center">
+                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </div>
+                </div>
+            </td>
+        `;
+
+        const thumbWrap = tr.querySelector('.cursor-zoom-in');
+        const dateInput = tr.querySelector('.pending-date-input');
+        const processBtn = tr.querySelector('.process-item-btn');
+        const deleteBtn = tr.querySelector('.delete-item-btn');
+
+        // 绑定缩略图点击放大
+        thumbWrap.addEventListener('click', () => {
             this.openPreviewModal(img.key, img.originalName);
         });
 
-        thumbDiv.appendChild(thumbImg);
-        tdThumb.appendChild(thumbDiv);
-        tr.appendChild(tdThumb);
-
-        // 2. 原始文件名 / 上传时间
-        const tdInfo = document.createElement('td');
-        tdInfo.className = "px-4 py-3";
-
-        const nameDiv = document.createElement('div');
-        nameDiv.className = "text-sm font-semibold text-slate-800 max-w-xs truncate";
-        nameDiv.textContent = img.originalName;
-        nameDiv.title = img.originalName;
-
-        const dateDiv = document.createElement('div');
-        dateDiv.className = "text-xxs text-slate-400 mt-0.5";
-        const formattedTime = new Date(img.uploadedAt).toLocaleString('zh-CN');
-        dateDiv.textContent = `上传时间: ${formattedTime}`;
-
-        tdInfo.appendChild(nameDiv);
-        tdInfo.appendChild(dateDiv);
-        tr.appendChild(tdInfo);
-
-        // 3. 目标日期日期选择器
-        const tdPicker = document.createElement('td');
-        tdPicker.className = "px-4 py-3";
-
-        const dateInput = document.createElement('input');
-        dateInput.type = 'date';
-        dateInput.className = "px-2 py-1 border border-slate-300 rounded-lg text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-slate-50 text-slate-900";
-        dateInput.value = img.suggestedDate || this.getTodayDateString();
-
-        tdPicker.appendChild(dateInput);
-        tr.appendChild(tdPicker);
-
-        // 4. 文件大小
-        const tdSize = document.createElement('td');
-        tdSize.className = "px-4 py-3 text-xs text-slate-500";
-        tdSize.textContent = this.formatFileSize(img.size);
-        tr.appendChild(tdSize);
-
-        // 5. 单项解析与删除操作按钮
-        const tdAction = document.createElement('td');
-        tdAction.className = "px-4 py-3 text-right space-x-2";
-
-        const processBtn = document.createElement('button');
-        processBtn.className = "px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded-lg text-xs font-bold shadow-sm transition duration-150 inline-flex items-center space-x-1";
-        processBtn.innerHTML = `<i data-lucide="play" class="w-3.5 h-3.5"></i> <span>解析入库</span>`;
-
-        const deleteBtn = document.createElement('button');
-        deleteBtn.className = "px-2.5 py-1 border border-slate-200 hover:bg-slate-50 text-slate-500 hover:text-red-500 rounded-lg text-xs font-semibold transition duration-150 inline-flex items-center";
-        deleteBtn.innerHTML = `<i data-lucide="trash-2" class="w-3.5 h-3.5"></i>`;
-
+        // 绑定单项 OCR 解析
         processBtn.addEventListener('click', async () => {
             const dateVal = dateInput.value;
             if (!this.isValidDate(dateVal)) {
@@ -425,15 +437,12 @@ export class UploadTab {
             await this.processSinglePendingItem(img.key, dateVal, tr, processBtn, deleteBtn);
         });
 
+        // 绑定物理丢弃暂存
         deleteBtn.addEventListener('click', async () => {
             if (confirm(`确定要丢弃该暂存文件吗？\n文件名: ${img.originalName}`)) {
                 await this.deleteSinglePendingItem(img.key, tr, processBtn, deleteBtn);
             }
         });
-
-        tdAction.appendChild(processBtn);
-        tdAction.appendChild(deleteBtn);
-        tr.appendChild(tdAction);
 
         return tr;
     }
@@ -451,6 +460,15 @@ export class UploadTab {
         const originalBtnHTML = processBtn.innerHTML;
         processBtn.className = "px-3 py-1 bg-red-400 text-white rounded-lg text-xs font-bold shadow-sm inline-flex items-center space-x-1 cursor-not-allowed";
         processBtn.innerHTML = `<div class="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div> <span>解析中...</span>`;
+
+        const mobStatus = rowElement.querySelector('.mobile-status-container');
+        if (mobStatus) {
+            mobStatus.innerHTML = `
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 animate-pulse">
+                    <span class="w-1.5 h-1.5 mr-1.5 rounded-full bg-blue-500 animate-ping"></span>处理中
+                </span>
+            `;
+        }
 
         rowElement.classList.add('bg-blue-50/30');
 
@@ -478,6 +496,14 @@ export class UploadTab {
             rowElement.classList.add('bg-emerald-50/30');
             processBtn.className = "px-3 py-1 bg-emerald-500 text-white rounded-lg text-xs font-bold shadow-sm inline-flex items-center space-x-1";
             processBtn.innerHTML = `<i data-lucide="check" class="w-3.5 h-3.5"></i> <span>解析成功</span>`;
+
+            if (mobStatus) {
+                mobStatus.innerHTML = `
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700">
+                        <span class="w-1.5 h-1.5 mr-1.5 rounded-full bg-emerald-500"></span>处理成功
+                    </span>
+                `;
+            }
             lucide.createIcons();
 
             await this.app.reloadSummaries();
@@ -505,6 +531,14 @@ export class UploadTab {
             if (picker) picker.disabled = false;
             processBtn.className = "px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded-lg text-xs font-bold shadow-sm transition duration-150 inline-flex items-center space-x-1";
             processBtn.innerHTML = originalBtnHTML;
+
+            if (mobStatus) {
+                mobStatus.innerHTML = `
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                        <span class="w-1.5 h-1.5 mr-1.5 rounded-full bg-red-600"></span>处理失败
+                    </span>
+                `;
+            }
             lucide.createIcons();
         } finally {
             this.isProcessing = false;
@@ -616,6 +650,16 @@ export class UploadTab {
             const originalBtnHTML = t.processBtn.innerHTML;
             t.processBtn.className = "px-3 py-1 bg-red-400 text-white rounded-lg text-xs font-bold shadow-sm inline-flex items-center space-x-1 cursor-not-allowed";
             t.processBtn.innerHTML = `<div class="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div> <span>解析中...</span>`;
+
+            const mobStatus = t.row.querySelector('.mobile-status-container');
+            if (mobStatus) {
+                mobStatus.innerHTML = `
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 animate-pulse">
+                        <span class="w-1.5 h-1.5 mr-1.5 rounded-full bg-blue-500 animate-ping"></span>处理中
+                    </span>
+                `;
+            }
+
             t.row.className = "bg-blue-50/30 transition duration-150";
 
             try {
@@ -641,6 +685,14 @@ export class UploadTab {
                 t.row.className = "bg-emerald-50/30 transition duration-150";
                 t.processBtn.className = "px-3 py-1 bg-emerald-500 text-white rounded-lg text-xs font-bold shadow-sm inline-flex items-center space-x-1";
                 t.processBtn.innerHTML = `<i data-lucide="check" class="w-3.5 h-3.5"></i> <span>解析成功</span>`;
+
+                if (mobStatus) {
+                    mobStatus.innerHTML = `
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700">
+                            <span class="w-1.5 h-1.5 mr-1.5 rounded-full bg-emerald-500"></span>处理成功
+                        </span>
+                    `;
+                }
                 lucide.createIcons();
 
                 successCount++;
@@ -661,6 +713,14 @@ export class UploadTab {
                 t.picker.disabled = false;
                 t.processBtn.className = "px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded-lg text-xs font-bold shadow-sm transition duration-150 inline-flex items-center space-x-1";
                 t.processBtn.innerHTML = originalBtnHTML;
+
+                if (mobStatus) {
+                    mobStatus.innerHTML = `
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                            <span class="w-1.5 h-1.5 mr-1.5 rounded-full bg-red-600"></span>处理失败
+                        </span>
+                    `;
+                }
                 lucide.createIcons();
                 failCount++;
             }

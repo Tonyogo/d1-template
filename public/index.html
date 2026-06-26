@@ -261,11 +261,13 @@
                         </h3>
                         <p class="text-xs text-slate-500 mt-1">这里列出已批量上传至 R2 暂存区的复盘长图，点击单项解析或一键顺序处理正式入库。</p>
                     </div>
-                    <div class="flex flex-wrap items-center gap-3">
+                    <div class="flex flex-col xs:flex-row items-stretch xs:items-center gap-3 w-full sm:w-auto">
                         <!-- 并发线程选择框 -->
-                        <div class="flex items-center space-x-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-500 font-semibold shadow-sm">
-                            <i data-lucide="zap" class="w-3.5 h-3.5 text-red-500"></i>
-                            <span>并行线程:</span>
+                        <div class="flex items-center justify-between xs:justify-start space-x-1.5 bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 md:py-1.5 text-xs text-slate-500 font-semibold shadow-sm w-full xs:w-auto">
+                            <div class="flex items-center space-x-1.5">
+                                <i data-lucide="zap" class="w-3.5 h-3.5 text-red-500"></i>
+                                <span>并行线程:</span>
+                            </div>
                             <select id="pending-concurrency-select" class="bg-transparent focus:outline-none text-slate-800 font-bold select-none cursor-pointer">
                                 <option value="1">1 (最稳健)</option>
                                 <option value="2">2 (双倍速)</option>
@@ -275,20 +277,23 @@
                             </select>
                         </div>
 
-                        <button id="pending-refresh-btn" class="px-3 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-600 hover:text-slate-900 rounded-lg text-xs font-semibold shadow-sm transition duration-150 flex items-center space-x-1.5">
-                            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
-                            <span>刷新列表</span>
-                        </button>
-                        <button id="pending-process-all-btn" class="px-4 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg text-xs font-bold shadow-sm transition duration-150 flex items-center space-x-1.5">
-                            <i data-lucide="play" class="w-3.5 h-3.5"></i>
-                            <span>一键并行处理</span>
-                        </button>
+                        <!-- 控制按钮对 -->
+                        <div class="grid grid-cols-2 gap-2 w-full xs:flex xs:items-center xs:space-x-2 xs:w-auto">
+                            <button id="pending-refresh-btn" class="justify-center px-4 py-2.5 md:px-3 md:py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-600 hover:text-slate-900 rounded-xl text-xs font-semibold shadow-sm transition duration-150 flex items-center space-x-1.5 w-full xs:w-auto">
+                                <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+                                <span>刷新列表</span>
+                            </button>
+                            <button id="pending-process-all-btn" class="justify-center px-4 py-2.5 md:px-4 md:py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-xl text-xs font-bold shadow-sm transition duration-150 flex items-center space-x-1.5 w-full xs:w-auto">
+                                <i data-lucide="play" class="w-3.5 h-3.5"></i>
+                                <span>一键并行处理</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-slate-100 text-sm">
-                        <thead class="bg-slate-50/75 text-slate-500 font-semibold text-xs uppercase tracking-wider text-left">
+                        <thead class="bg-slate-50/75 text-slate-500 font-semibold text-xs uppercase tracking-wider text-left hidden md:table-header-group">
                             <tr>
                                 <th class="px-4 py-3 rounded-l-xl w-24">缩略图</th>
                                 <th class="px-4 py-3">原始文件名 / 上传时间</th>
