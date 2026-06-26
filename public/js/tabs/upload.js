@@ -874,4 +874,46 @@ export class UploadTab {
         this.fileInput.value = '';
         this.loadPendingQueue();
     }
+
+    getStatusBadgeHTML(task) {
+        const status = task.status || 'pending';
+        switch (status) {
+            case 'pending':
+                return `
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+                        <span class="w-1.5 h-1.5 mr-1.5 rounded-full bg-slate-400"></span>待处理
+                    </span>
+                `;
+            case 'uploading':
+                return `
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-100 animate-pulse">
+                        <span class="w-1.5 h-1.5 mr-1.5 rounded-full bg-blue-500 animate-ping"></span>正在上传
+                    </span>
+                `;
+            case 'processing':
+                return `
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-50 text-red-700 border border-red-100 animate-pulse">
+                        <span class="w-1.5 h-1.5 mr-1.5 rounded-full bg-red-500 animate-ping"></span>OCR处理中
+                    </span>
+                `;
+            case 'success':
+                return `
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">
+                        <span class="w-1.5 h-1.5 mr-1.5 rounded-full bg-emerald-500"></span>处理成功
+                    </span>
+                `;
+            case 'failed':
+                return `
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800 border border-red-200">
+                        <span class="w-1.5 h-1.5 mr-1.5 rounded-full bg-red-600"></span>处理失败
+                    </span>
+                `;
+            default:
+                return `
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+                        <span class="w-1.5 h-1.5 mr-1.5 rounded-full bg-slate-400"></span>待处理
+                    </span>
+                `;
+        }
+    }
 }
