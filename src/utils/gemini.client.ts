@@ -4,9 +4,16 @@ declare const Buffer: any;
 
 export class GeminiClient {
 	/**
-	 * Call Gemini OCR API to extract text from image as Markdown
+	 * Call Gemini OCR API to extract text from image as Markdown.
+	 * Supports optional stream mode (default is true) to process chunks incrementally,
+	 * preventing Cloudflare 524 timeouts.
 	 */
-	static async callGeminiOCR(imageBlob: Blob, mimeType: string, env: Env): Promise<string> {
+	static async callGeminiOCR(
+		imageBlob: Blob,
+		mimeType: string,
+		env: Env,
+		stream: boolean = true
+	): Promise<string> {
 		const arrayBuffer = await imageBlob.arrayBuffer();
 		// In Cloudflare Workers environment, global Buffer might not be directly available,
 		// but since we might run on workerd or with node_compat, let's use a standard Web API representation
@@ -31,8 +38,6 @@ export class GeminiClient {
 		if (!apiKey) {
 			throw new Error("GEMINI_API_KEY is not configured");
 		}
-
-		const url = `${apiBase}/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
 		const payload = {
 			contents: [
@@ -61,24 +66,105 @@ export class GeminiClient {
 			}
 		};
 
-		const response = await fetch(url, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify(payload)
-		});
+		if (stream) {
+			const url = `${apiBase}/v1beta/models/${model}:streamGenerateContent?key=${apiKey}&alt=sse`;
+			const response = await fetch(url, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify(payload)
+			});
 
-		if (!response.ok) {
-			const errText = await response.text();
-			throw new Error(`Gemini API error: ${response.status} ${response.statusText} - ${errText}`);
+			if (!response.ok) {
+				const errText = await response.text();
+				throw new Error(`Gemini API error (stream): ${response.status} ${response.statusText} - ${errText}`);
+			}
+
+			if (!response.body) {
+				throw new Error("Gemini API stream response body is null");
+			}
+
+			const reader = response.body.getReader();
+			const decoder = new TextDecoder("utf-8");
+			let buffer = "";
+			let fullMarkdown = "";
+
+			try {
+				while (true) {
+					const { value, done } = await reader.read();
+					if (done) break;
+
+					buffer += decoder.decode(value, { stream: true });
+					const lines = buffer.split("\n");
+					buffer = lines.pop() || ""; // Save last incomplete line back to the buffer
+
+					for (const line of lines) {
+						const trimmedLine = line.trim();
+						if (trimmedLine.startsWith("data:")) {
+							const dataStr = trimmedLine.slice(5).trim();
+							if (!dataStr) continue;
+							try {
+								const parsed = JSON.parse(dataStr);
+								const text = parsed.candidates?.[0]?.content?.parts?.[0]?.text;
+								if (text) {
+									fullMarkdown += text;
+								}
+							} catch (e) {
+								console.error("Failed to parse Gemini SSE data line:", dataStr, e);
+							}
+						}
+					}
+				}
+
+				// Check if there is any trailing unprocessed line remaining in buffer
+				if (buffer) {
+					const trimmedLine = buffer.trim();
+					if (trimmedLine.startsWith("data:")) {
+						const dataStr = trimmedLine.slice(5).trim();
+						if (dataStr) {
+							try {
+								const parsed = JSON.parse(dataStr);
+								const text = parsed.candidates?.[0]?.content?.parts?.[0]?.text;
+								if (text) {
+									fullMarkdown += text;
+								}
+							} catch (e) {
+								console.error("Failed to parse Gemini SSE remaining data line:", dataStr, e);
+							}
+						}
+					}
+				}
+			} finally {
+				reader.releaseLock();
+			}
+
+			if (!fullMarkdown) {
+				throw new Error("Empty or invalid streamed response from Gemini API");
+			}
+
+			return fullMarkdown;
+		} else {
+			const url = `${apiBase}/v1beta/models/${model}:generateContent?key=${apiKey}`;
+			const response = await fetch(url, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify(payload)
+			});
+
+			if (!response.ok) {
+				const errText = await response.text();
+				throw new Error(`Gemini API error (non-stream): ${response.status} ${response.statusText} - ${errText}`);
+			}
+
+			const json: any = await response.json();
+			if (!json.candidates || json.candidates.length === 0 || !json.candidates[0].content || !json.candidates[0].content.parts || json.candidates[0].content.parts.length === 0) {
+				throw new Error("Empty or invalid response from Gemini API");
+			}
+
+			return json.candidates[0].content.parts[0].text;
 		}
-
-		const json: any = await response.json();
-		if (!json.candidates || json.candidates.length === 0 || !json.candidates[0].content || !json.candidates[0].content.parts || json.candidates[0].content.parts.length === 0) {
-			throw new Error("Empty or invalid response from Gemini API");
-		}
-
-		return json.candidates[0].content.parts[0].text;
 	}
 }
