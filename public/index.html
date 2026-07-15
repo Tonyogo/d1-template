@@ -261,9 +261,9 @@
                         </h3>
                         <p class="text-xs text-slate-500 mt-1">这里列出已批量上传至 R2 暂存区的复盘长图，点击单项解析或一键顺序处理正式入库。</p>
                     </div>
-                    <div class="flex flex-col xs:flex-row items-stretch xs:items-center gap-3 w-full sm:w-auto">
+                    <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
                         <!-- 并发线程选择框 -->
-                        <div class="flex items-center justify-between xs:justify-start space-x-1.5 bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 md:py-1.5 text-xs text-slate-500 font-semibold shadow-sm w-full xs:w-auto">
+                        <div class="flex items-center justify-between sm:justify-start space-x-1.5 bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 md:py-1.5 text-xs text-slate-500 font-semibold shadow-sm w-full sm:w-auto">
                             <div class="flex items-center space-x-1.5">
                                 <i data-lucide="zap" class="w-3.5 h-3.5 text-red-500"></i>
                                 <span>并行线程:</span>
@@ -278,12 +278,12 @@
                         </div>
 
                         <!-- 控制按钮对 -->
-                        <div class="grid grid-cols-2 gap-2 w-full xs:flex xs:items-center xs:space-x-2 xs:w-auto">
-                            <button id="pending-refresh-btn" class="justify-center px-4 py-2.5 md:px-3 md:py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-600 hover:text-slate-900 rounded-xl text-xs font-semibold shadow-sm transition duration-150 flex items-center space-x-1.5 w-full xs:w-auto">
+                        <div class="grid grid-cols-2 gap-2 w-full sm:flex sm:items-center sm:space-x-2 sm:w-auto">
+                            <button id="pending-refresh-btn" class="justify-center px-4 py-2.5 md:px-3 md:py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-600 hover:text-slate-900 rounded-xl text-xs font-semibold shadow-sm transition duration-150 flex items-center space-x-1.5 w-full sm:w-auto">
                                 <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
                                 <span>刷新列表</span>
                             </button>
-                            <button id="pending-process-all-btn" class="justify-center px-4 py-2.5 md:px-4 md:py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-xl text-xs font-bold shadow-sm transition duration-150 flex items-center space-x-1.5 w-full xs:w-auto">
+                            <button id="pending-process-all-btn" class="justify-center px-4 py-2.5 md:px-4 md:py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-xl text-xs font-bold shadow-sm transition duration-150 flex items-center space-x-1.5 w-full sm:w-auto">
                                 <i data-lucide="play" class="w-3.5 h-3.5"></i>
                                 <span>一键并行处理</span>
                             </button>
@@ -294,11 +294,11 @@
                 <div class="overflow-hidden border border-slate-200/60 rounded-2xl">
                     <!-- 桌面端表头 (PC 专享，手机端自动隐藏) -->
                     <div class="hidden md:grid grid-cols-12 gap-4 bg-slate-50/75 px-6 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider border-b border-slate-100">
-                        <div class="col-span-2">缩略图</div>
-                        <div class="col-span-4">原始文件名 / 上传时间</div>
-                        <div class="col-span-3">目标日期 (智能建议)</div>
+                        <div class="col-span-1">缩略图</div>
+                        <div class="col-span-3">原始文件名 / 上传时间</div>
+                        <div class="col-span-4">目标日期 (智能建议)</div>
                         <div class="col-span-1">大小</div>
-                        <div class="col-span-2 text-right">操作</div>
+                        <div class="col-span-3 text-right">操作</div>
                     </div>
 
                     <!-- 待处理暂存队列列表主体 -->

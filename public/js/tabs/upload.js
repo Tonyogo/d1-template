@@ -351,9 +351,9 @@ export class UploadTab {
         const statusBadge = this.getStatusBadgeHTML(img);
 
         row.innerHTML = `
-            <!-- 1. 缩略图列 (PC 占 2 列) -->
-            <div class="col-span-2 flex items-center space-x-3.5 md:space-x-0">
-                <div class="w-16 h-16 md:w-12 md:h-12 rounded-xl md:rounded overflow-hidden border border-slate-200 cursor-zoom-in bg-slate-100 flex items-center justify-center transition hover:opacity-80 shrink-0">
+            <!-- 1. 缩略图列 (PC 占 1 列) -->
+            <div class="col-span-1 flex items-center space-x-3.5 md:space-x-0">
+                <div class="w-16 h-16 md:w-10 md:h-10 rounded-xl md:rounded overflow-hidden border border-slate-200 cursor-zoom-in bg-slate-100 flex items-center justify-center transition hover:opacity-80 shrink-0">
                     <img src="/api/pending-image?key=${encodeURIComponent(img.key)}" class="w-full h-full object-cover">
                 </div>
                 <!-- 移动端档案区 (只在手机端显示) -->
@@ -367,17 +367,17 @@ export class UploadTab {
                 </div>
             </div>
 
-            <!-- 2. 文件信息列 (PC 占 4 列) -->
-            <div class="hidden md:block col-span-4 min-w-0">
+            <!-- 2. 文件信息列 (PC 占 3 列) -->
+            <div class="hidden md:block col-span-3 min-w-0">
                 <div class="text-sm font-semibold text-slate-800 truncate" title="${img.originalName}">${img.originalName}</div>
                 <div class="text-xxs text-slate-400 mt-0.5">上传时间: ${formattedTime}</div>
             </div>
 
-            <!-- 3. 日期选择器 (PC 占 3 列) -->
-            <div class="col-span-3">
+            <!-- 3. 日期选择器 (PC 占 4 列) -->
+            <div class="col-span-4 min-w-0">
                 <div class="space-y-1.5 md:space-y-0">
                     <div class="md:hidden text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">目标复盘日期</div>
-                    <input type="date" value="${suggestedDateVal}" class="pending-date-input w-full px-3 py-2 md:px-2 md:py-1 border border-slate-300 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-slate-50 text-slate-900">
+                    <input type="date" value="${suggestedDateVal}" class="pending-date-input w-full min-w-0 px-3 py-2 md:px-2 md:py-1 border border-slate-300 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-slate-50 text-slate-900">
                 </div>
             </div>
 
@@ -386,20 +386,20 @@ export class UploadTab {
                 ${sizeStr}
             </div>
 
-            <!-- 5. 操作列 (PC 占 2 列) -->
-            <div class="col-span-2">
+            <!-- 5. 操作列 (PC 占 3 列) -->
+            <div class="col-span-3 min-w-0">
                 <div class="flex items-center justify-between md:justify-end gap-3 mt-1 md:mt-0">
                     <!-- 移动端专享状态栏 -->
                     <div class="mobile-status-container md:hidden flex items-center shrink-0">
                         ${statusBadge}
                     </div>
-                    <!-- 控制按键（移动端自适应，防溢出） -->
+                    <!-- 控制按键（移动端自适应，防溢出，高度完美对齐） -->
                     <div class="flex items-center space-x-2 min-w-0 flex-1 md:flex-initial md:w-auto justify-end">
-                        <button class="process-item-btn flex-1 md:flex-none justify-center px-4 py-2.5 md:px-3 md:py-1 bg-red-500 hover:bg-red-600 text-white rounded-xl text-xs font-bold shadow-sm transition duration-150 inline-flex items-center space-x-1">
+                        <button class="process-item-btn flex-1 md:flex-none justify-center px-4 h-9 md:h-8 bg-red-500 hover:bg-red-600 text-white rounded-xl text-xs font-bold shadow-sm transition duration-150 inline-flex items-center space-x-1 border border-transparent">
                             <i data-lucide="play" class="w-3.5 h-3.5"></i>
                             <span>解析入库</span>
                         </button>
-                        <button class="delete-item-btn p-2.5 md:p-1.5 border border-slate-200 hover:bg-slate-50 text-slate-400 hover:text-red-500 rounded-xl text-xs font-semibold transition duration-150 inline-flex items-center">
+                        <button class="delete-item-btn w-9 h-9 md:w-8 md:h-8 border border-slate-200 hover:bg-slate-50 text-slate-400 hover:text-red-500 rounded-xl text-xs font-semibold transition duration-150 inline-flex items-center justify-center shrink-0">
                             <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                         </button>
                     </div>
