@@ -24,7 +24,7 @@
 		"enabled": true
 	},
 	"vars": {
-		"GEMINI_API_BASE": "http://106.14.157.245:7860",
+		"GEMINI_API_BASE": "https://gemini.yatao.cc.cd",
 		"GEMINI_MODEL": "gemini-flash-latest"
 	}
 }
