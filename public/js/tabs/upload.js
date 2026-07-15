@@ -393,8 +393,8 @@ export class UploadTab {
                     <div class="mobile-status-container md:hidden flex items-center shrink-0">
                         ${statusBadge}
                     </div>
-                    <!-- 控制按键（移动端撑满，手感极佳） -->
-                    <div class="flex items-center space-x-2 shrink-0 w-full md:w-auto justify-end">
+                    <!-- 控制按键（移动端自适应，防溢出） -->
+                    <div class="flex items-center space-x-2 min-w-0 flex-1 md:flex-initial md:w-auto justify-end">
                         <button class="process-item-btn flex-1 md:flex-none justify-center px-4 py-2.5 md:px-3 md:py-1 bg-red-500 hover:bg-red-600 text-white rounded-xl text-xs font-bold shadow-sm transition duration-150 inline-flex items-center space-x-1">
                             <i data-lucide="play" class="w-3.5 h-3.5"></i>
                             <span>解析入库</span>
@@ -448,7 +448,8 @@ export class UploadTab {
         if (picker) picker.disabled = true;
 
         const originalBtnHTML = processBtn.innerHTML;
-        processBtn.className = "px-3 py-1 bg-red-400 text-white rounded-lg text-xs font-bold shadow-sm inline-flex items-center space-x-1 cursor-not-allowed";
+        processBtn.classList.remove('bg-red-500', 'hover:bg-red-600');
+        processBtn.classList.add('bg-red-400', 'cursor-not-allowed');
         processBtn.innerHTML = `<div class="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div> <span>解析中...</span>`;
 
         const mobStatus = rowElement.querySelector('.mobile-status-container');
@@ -484,7 +485,8 @@ export class UploadTab {
 
             rowElement.classList.remove('bg-blue-50/30');
             rowElement.classList.add('bg-emerald-50/30');
-            processBtn.className = "px-3 py-1 bg-emerald-500 text-white rounded-lg text-xs font-bold shadow-sm inline-flex items-center space-x-1";
+            processBtn.classList.remove('bg-red-400', 'cursor-not-allowed');
+            processBtn.classList.add('bg-emerald-500');
             processBtn.innerHTML = `<i data-lucide="check" class="w-3.5 h-3.5"></i> <span>解析成功</span>`;
 
             if (mobStatus) {
@@ -519,7 +521,8 @@ export class UploadTab {
             processBtn.disabled = false;
             deleteBtn.disabled = false;
             if (picker) picker.disabled = false;
-            processBtn.className = "px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded-lg text-xs font-bold shadow-sm transition duration-150 inline-flex items-center space-x-1";
+            processBtn.classList.remove('bg-red-400', 'cursor-not-allowed');
+            processBtn.classList.add('bg-red-500', 'hover:bg-red-600');
             processBtn.innerHTML = originalBtnHTML;
 
             if (mobStatus) {
@@ -587,14 +590,15 @@ export class UploadTab {
             if (!this.isCancelRequested) {
                 this.isCancelRequested = true;
                 this.pendingProcessAllBtn.setAttribute('disabled', 'true');
-                this.pendingProcessAllBtn.className = "px-4 py-1.5 bg-slate-400 text-white rounded-lg text-xs font-bold shadow-sm cursor-not-allowed flex items-center space-x-1.5";
+                this.pendingProcessAllBtn.classList.remove('bg-slate-700', 'hover:bg-slate-800');
+                this.pendingProcessAllBtn.classList.add('bg-slate-400', 'cursor-not-allowed');
                 this.pendingProcessAllBtn.innerHTML = `<div class="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white"></div> <span>正在优雅停止...</span>`;
                 console.log("User requested cancel. Stopping processAllPending gracefully...");
             }
             return;
         }
 
-        const rows = Array.from(this.pendingTbody.querySelectorAll('tr[id^="pending-row-"]'));
+        const rows = Array.from(this.pendingTbody.querySelectorAll('div[id^="pending-row-"]'));
         if (rows.length === 0) {
             alert('当前队列中没有暂存任务！');
             return;
@@ -610,9 +614,11 @@ export class UploadTab {
         this.isCancelRequested = false; // 重设状态
         this.togglePendingControls(false);
 
-        // 按钮自切换为 `🛑 停止处理` 红色高亮状态
-        this.pendingProcessAllBtn.className = "px-4 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-bold shadow-sm transition duration-150 flex items-center space-x-1.5";
-        this.pendingProcessAllBtn.innerHTML = `<span>🛑 停止处理</span>`;
+        // 按钮自切换为 `🛑 停止处理` 高对比度中立状态，避免类名强写
+        this.pendingProcessAllBtn.classList.remove('bg-red-500', 'hover:bg-red-600');
+        this.pendingProcessAllBtn.classList.add('bg-slate-700', 'hover:bg-slate-800');
+        this.pendingProcessAllBtn.innerHTML = `<i data-lucide="square" class="w-3.5 h-3.5 text-red-400 fill-red-400"></i> <span>停止处理</span>`;
+        lucide.createIcons();
 
         let successCount = 0;
         let failCount = 0;
@@ -628,7 +634,7 @@ export class UploadTab {
         const processWorker = async (t) => {
             const date = t.picker.value;
             if (!this.isValidDate(date)) {
-                t.row.className = "bg-red-50/30 transition duration-150";
+                t.row.classList.add('bg-red-50/30');
                 failCount++;
                 return;
             }
@@ -638,7 +644,8 @@ export class UploadTab {
             t.picker.disabled = true;
 
             const originalBtnHTML = t.processBtn.innerHTML;
-            t.processBtn.className = "px-3 py-1 bg-red-400 text-white rounded-lg text-xs font-bold shadow-sm inline-flex items-center space-x-1 cursor-not-allowed";
+            t.processBtn.classList.remove('bg-red-500', 'hover:bg-red-600');
+            t.processBtn.classList.add('bg-red-400', 'cursor-not-allowed');
             t.processBtn.innerHTML = `<div class="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div> <span>解析中...</span>`;
 
             const mobStatus = t.row.querySelector('.mobile-status-container');
@@ -650,7 +657,7 @@ export class UploadTab {
                 `;
             }
 
-            t.row.className = "bg-blue-50/30 transition duration-150";
+            t.row.classList.add('bg-blue-50/30');
 
             try {
                 let data;
@@ -672,8 +679,10 @@ export class UploadTab {
                     throw new Error(data.message || data.error);
                 }
 
-                t.row.className = "bg-emerald-50/30 transition duration-150";
-                t.processBtn.className = "px-3 py-1 bg-emerald-500 text-white rounded-lg text-xs font-bold shadow-sm inline-flex items-center space-x-1";
+                t.row.classList.remove('bg-blue-50/30');
+                t.row.classList.add('bg-emerald-50/30');
+                t.processBtn.classList.remove('bg-red-400', 'cursor-not-allowed');
+                t.processBtn.classList.add('bg-emerald-500');
                 t.processBtn.innerHTML = `<i data-lucide="check" class="w-3.5 h-3.5"></i> <span>解析成功</span>`;
 
                 if (mobStatus) {
@@ -697,11 +706,13 @@ export class UploadTab {
 
             } catch (err) {
                 console.error('Failed processing item in loop:', err);
-                t.row.className = "bg-red-50/30 transition duration-150";
+                t.row.classList.remove('bg-blue-50/30');
+                t.row.classList.add('bg-red-50/30');
                 t.processBtn.disabled = false;
                 t.deleteBtn.disabled = false;
                 t.picker.disabled = false;
-                t.processBtn.className = "px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded-lg text-xs font-bold shadow-sm transition duration-150 inline-flex items-center space-x-1";
+                t.processBtn.classList.remove('bg-red-400', 'cursor-not-allowed');
+                t.processBtn.classList.add('bg-red-500', 'hover:bg-red-600');
                 t.processBtn.innerHTML = originalBtnHTML;
 
                 if (mobStatus) {
@@ -733,6 +744,13 @@ export class UploadTab {
             this.isProcessing = false;
             this.isCancelRequested = false;
             this.togglePendingControls(true);
+
+            // 还原按钮初始状态
+            this.pendingProcessAllBtn.disabled = false;
+            this.pendingProcessAllBtn.classList.remove('opacity-50', 'cursor-not-allowed', 'bg-slate-400', 'bg-slate-700', 'hover:bg-slate-800');
+            this.pendingProcessAllBtn.classList.add('bg-red-500', 'hover:bg-red-600');
+            this.pendingProcessAllBtn.innerHTML = `<i data-lucide="play" class="w-3.5 h-3.5"></i> <span>一键并行处理</span>`;
+            lucide.createIcons();
         }
     }
 
@@ -771,8 +789,8 @@ export class UploadTab {
             this.pendingRefreshBtn.removeAttribute('disabled');
             this.pendingRefreshBtn.classList.remove('opacity-50', 'cursor-not-allowed');
             this.pendingProcessAllBtn.removeAttribute('disabled');
-            this.pendingProcessAllBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-            this.pendingProcessAllBtn.className = "px-4 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg text-xs font-bold shadow-sm transition duration-150 flex items-center space-x-1.5";
+            this.pendingProcessAllBtn.classList.remove('opacity-50', 'cursor-not-allowed', 'bg-slate-400', 'bg-slate-700', 'hover:bg-slate-800');
+            this.pendingProcessAllBtn.classList.add('bg-red-500', 'hover:bg-red-600');
             this.pendingProcessAllBtn.innerHTML = `<i data-lucide="play" class="w-3.5 h-3.5"></i> <span>一键并行处理</span>`;
             lucide.createIcons();
         } else {
