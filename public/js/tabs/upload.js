@@ -352,13 +352,19 @@ export class UploadTab {
 
         row.innerHTML = `
             <!-- 1. 缩略图列 (PC 占 1 列) -->
-            <div class="col-span-1 flex items-center space-x-3.5 md:space-x-0">
+            <div class="col-span-1 flex items-center space-x-3.5 md:space-x-0 min-w-0">
                 <div class="w-16 h-16 md:w-10 md:h-10 rounded-xl md:rounded overflow-hidden border border-slate-200 cursor-zoom-in bg-slate-100 flex items-center justify-center transition hover:opacity-80 shrink-0">
                     <img src="/api/pending-image?key=${encodeURIComponent(img.key)}" class="w-full h-full object-cover">
                 </div>
-                <!-- 移动端档案区 (只在手机端显示) -->
+                <!-- 移动端档案区 (只在手机端显示，状态栏嵌入右侧) -->
                 <div class="block md:hidden min-w-0 flex-1">
-                    <div class="text-sm font-black text-slate-800 truncate" title="${img.originalName}">${img.originalName}</div>
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="text-sm font-black text-slate-800 truncate" title="${img.originalName}">${img.originalName}</div>
+                        <!-- 移动端专享状态栏：上提到卡片最顶端 -->
+                        <div class="mobile-status-container flex items-center shrink-0">
+                            ${statusBadge}
+                        </div>
+                    </div>
                     <div class="text-[10px] text-slate-400 mt-1 flex items-center space-x-2">
                         <span>大小: ${sizeStr}</span>
                         <span class="text-slate-300">|</span>
@@ -373,9 +379,9 @@ export class UploadTab {
                 <div class="text-xxs text-slate-400 mt-0.5">上传时间: ${formattedTime}</div>
             </div>
 
-            <!-- 3. 日期选择器 (PC 占 4 列) -->
-            <div class="col-span-4 min-w-0">
-                <div class="space-y-1.5 md:space-y-0">
+            <!-- 3. 日期选择器 (PC 占 4 列，在移动端强制 w-full 占满) -->
+            <div class="col-span-4 min-w-0 w-full md:w-auto">
+                <div class="space-y-1.5 md:space-y-0 w-full">
                     <div class="md:hidden text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">目标复盘日期</div>
                     <input type="date" value="${suggestedDateVal}" class="pending-date-input w-full min-w-0 px-3 py-2 md:px-2 md:py-1 border border-slate-300 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-slate-50 text-slate-900">
                 </div>
@@ -386,13 +392,9 @@ export class UploadTab {
                 ${sizeStr}
             </div>
 
-            <!-- 5. 操作列 (PC 占 3 列) -->
-            <div class="col-span-3 min-w-0">
-                <div class="flex items-center justify-between md:justify-end gap-3 mt-1 md:mt-0">
-                    <!-- 移动端专享状态栏 -->
-                    <div class="mobile-status-container md:hidden flex items-center shrink-0">
-                        ${statusBadge}
-                    </div>
+            <!-- 5. 操作列 (PC 占 3 列，移动端去除了状态栏，高度绝对齐平一致) -->
+            <div class="col-span-3 min-w-0 w-full md:w-auto">
+                <div class="flex items-center justify-end w-full md:w-auto">
                     <!-- 控制按键（移动端自适应，防溢出，高度完美对齐） -->
                     <div class="flex items-center space-x-2 min-w-0 flex-1 md:flex-initial md:w-auto justify-end">
                         <button class="process-item-btn flex-1 md:flex-none justify-center px-4 h-9 md:h-8 bg-red-500 hover:bg-red-600 text-white rounded-xl text-xs font-bold shadow-sm transition duration-150 inline-flex items-center space-x-1 border border-transparent">
