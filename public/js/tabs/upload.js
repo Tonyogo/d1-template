@@ -343,7 +343,7 @@ export class UploadTab {
         row.id = `pending-row-${img.key.replace(/[\/.]/g, '-')}`;
         row.setAttribute('data-key', img.key);
         // 核心：移动端是一个精致独立的卡片；桌面端是一个网格行
-        row.className = "flex flex-col md:grid md:grid-cols-12 md:gap-4 md:items-center p-5 md:px-6 md:py-4 bg-white hover:bg-slate-50/50 transition duration-150 gap-4 md:gap-0 border-b border-slate-100";
+        row.className = "flex flex-col md:grid md:grid-cols-12 md:gap-4 md:items-center p-5 md:px-6 md:py-4 bg-white hover:bg-slate-50/50 transition duration-150 gap-4 border-b border-slate-100";
 
         const sizeStr = this.formatFileSize(img.size);
         const formattedTime = new Date(img.uploadedAt).toLocaleString('zh-CN');
@@ -380,7 +380,7 @@ export class UploadTab {
             </div>
 
             <!-- 3. 日期选择器 (PC 占 4 列，在移动端强制 w-full 占满) -->
-            <div class="col-span-4 min-w-0 w-full md:w-auto">
+            <div class="col-span-4 min-w-0 w-full">
                 <div class="space-y-1.5 md:space-y-0 w-full">
                     <div class="md:hidden text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">目标复盘日期</div>
                     <input type="date" value="${suggestedDateVal}" class="pending-date-input w-full min-w-0 px-3 py-2 md:px-2 md:py-1 border border-slate-300 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-slate-50 text-slate-900">
@@ -393,8 +393,8 @@ export class UploadTab {
             </div>
 
             <!-- 5. 操作列 (PC 占 3 列，移动端去除了状态栏，高度绝对齐平一致) -->
-            <div class="col-span-3 min-w-0 w-full md:w-auto">
-                <div class="flex items-center justify-end w-full md:w-auto">
+            <div class="col-span-3 min-w-0 w-full">
+                <div class="flex items-center justify-end w-full">
                     <!-- 控制按键（移动端自适应，防溢出，高度完美对齐） -->
                     <div class="flex items-center space-x-2 min-w-0 flex-1 md:flex-initial md:w-auto justify-end">
                         <button class="process-item-btn flex-1 md:flex-none justify-center px-4 h-9 md:h-8 bg-red-500 hover:bg-red-600 text-white rounded-xl text-xs font-bold shadow-sm transition duration-150 inline-flex items-center space-x-1 border border-transparent">
