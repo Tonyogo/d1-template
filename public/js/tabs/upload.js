@@ -626,9 +626,9 @@ export class UploadTab {
         let failCount = 0;
 
         const tasks = rows.map(row => {
-            const picker = row.querySelector('input[type="date"]');
-            const processBtn = row.querySelector('button.bg-red-500');
-            const deleteBtn = row.querySelector('button.text-slate-500');
+            const picker = row.querySelector('.pending-date-input');
+            const processBtn = row.querySelector('.process-item-btn');
+            const deleteBtn = row.querySelector('.delete-item-btn');
             const key = row.getAttribute('data-key');
             return { row, picker, processBtn, deleteBtn, key, processed: false };
         }).filter(t => t.processBtn && t.deleteBtn && t.picker && !t.processBtn.disabled);
