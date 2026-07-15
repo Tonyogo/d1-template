@@ -9,6 +9,7 @@ class App {
         this.currentTab = 'search';
         this.initDOM();
         this.initTabs();
+        this.initGlobalEventListeners();
     }
 
     initDOM() {
@@ -153,6 +154,21 @@ class App {
         this.switchTab('review');
         document.getElementById('date-select').value = dateStr;
         this.reviewTab.loadDailyDetails(dateStr);
+    }
+
+    initGlobalEventListeners() {
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' || e.key === 'Esc') {
+                // 1. 判断并关闭 UploadTab 下的暂存图片预览
+                if (this.uploadTab && this.uploadTab.previewModal && !this.uploadTab.previewModal.classList.contains('hidden')) {
+                    this.uploadTab.closePreviewModal();
+                }
+                // 2. 判断并关闭 ReviewTab 下的历史数据纠错弹窗
+                else if (this.reviewTab && this.reviewTab.editModal && !this.reviewTab.editModal.classList.contains('hidden')) {
+                    this.reviewTab.closeEditModal();
+                }
+            }
+        });
     }
 }
 
