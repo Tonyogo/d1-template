@@ -76,7 +76,7 @@ export class SummaryRepository {
 
 		const insSectors = sectorsAndStocks.map(sec =>
 			this.db.prepare(`
-				INSERT INTO sectors (date, name, description)
+				INSERT OR REPLACE INTO sectors (date, name, description)
 				VALUES (?, ?, ?)
 			`).bind(date, sec.name, sec.description || null)
 		);
@@ -93,7 +93,7 @@ export class SummaryRepository {
 			for (const stock of sec.stocks) {
 				stockStatements.push(
 					this.db.prepare(`
-						INSERT INTO limit_up_stocks (date, status, code, name, time, concept_reason, sector_id)
+						INSERT OR REPLACE INTO limit_up_stocks (date, status, code, name, time, concept_reason, sector_id)
 						VALUES (?, ?, ?, ?, ?, ?, ?)
 					`).bind(
 						date,

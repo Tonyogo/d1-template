@@ -85,6 +85,61 @@ export class OcrParser {
 			}
 		}
 
-		return { summary, sectorsAndStocks };
+		// === 核心防护：执行板块和个股的内存级去重与合并机制 (YAGNI 优雅闭环) ===
+		const consolidatedSectors: SectorParsed[] = [];
+		const sectorMap = new Map<string, SectorParsed>();
+
+		for (const sec of sectorsAndStocks) {
+			const name = sec.name.trim();
+			if (!name) continue;
+
+			if (!sectorMap.has(name)) {
+				const clonedSector = {
+					name,
+					description: sec.description ? sec.description.trim() : "",
+					stocks: [...sec.stocks]
+				};
+				sectorMap.set(name, clonedSector);
+				consolidatedSectors.push(clonedSector);
+			} else {
+				const existing = sectorMap.get(name)!;
+
+				// 优雅合并板块催化剂简析
+				const cleanDesc = sec.description ? sec.description.trim() : "";
+				if (cleanDesc) {
+					if (existing.description) {
+						if (!existing.description.includes(cleanDesc)) {
+							existing.description += ` / ${cleanDesc}`;
+						}
+					} else {
+						existing.description = cleanDesc;
+					}
+				}
+
+				// 合并个股列表
+				existing.stocks.push(...sec.stocks);
+			}
+		}
+
+		// 2. 全局个股去重 (捍卫 limit_up_stocks 表中的 UNIQUE(date, code) 约束)
+		const seenStockCodes = new Set<string>();
+
+		for (const sec of consolidatedSectors) {
+			const uniqueStocks: StockParsed[] = [];
+			for (const stock of sec.stocks) {
+				const code = stock.code.trim();
+				if (!code) continue;
+
+				if (!seenStockCodes.has(code)) {
+					seenStockCodes.add(code);
+					uniqueStocks.push(stock);
+				} else {
+					console.warn(`[OCR Parser] 发现跨板块重复个股代码: ${code} (${stock.name})，在板块 "${sec.name}" 中跳过，保障 D1 数据库约束。`);
+				}
+			}
+			sec.stocks = uniqueStocks;
+		}
+
+		return { summary, sectorsAndStocks: consolidatedSectors };
 	}
 }
