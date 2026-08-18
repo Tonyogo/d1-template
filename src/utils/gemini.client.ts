@@ -32,7 +32,7 @@ export class GeminiClient {
 		}
 
 		const apiBase = env.GEMINI_API_BASE || 'https://generativelanguage.googleapis.com';
-		const model = env.GEMINI_MODEL || 'gemini-flash-latest';
+		const model = env.GEMINI_MODEL || 'gemini-pro-latest';
 		const apiKey = env.GEMINI_API_KEY;
 
 		if (!apiKey) {

@@ -25,6 +25,6 @@
 	},
 	"vars": {
 		"GEMINI_API_BASE": "https://gemini.yatao.cc.cd",
-		"GEMINI_MODEL": "gemini-flash-latest"
+		"GEMINI_MODEL": "gemini-pro-latest"
 	}
 }
