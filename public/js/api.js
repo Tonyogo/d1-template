@@ -25,6 +25,11 @@ export const api = {
         return api.fetchJson('/api/search?' + queryParams.toString());
     },
     getActiveSectors: (days) => api.fetchJson(`/api/active-sectors?days=${days}`),
+    stashPendingImage: (file) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        return api.fetchJson('/api/batch/upload', { method: 'POST', body: formData });
+    },
     batchUpload: (formData) => api.fetchJson('/api/batch/upload', { method: 'POST', body: formData }),
     batchProcess: (payload) => api.fetchJson('/api/batch/process', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }),
     listPendingImages: () => api.fetchJson('/api/pending-images'),
