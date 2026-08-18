@@ -2,118 +2,190 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>A股涨停复盘看板</title>
+    <!-- Fonts & CDNs -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#fff1f2',
+                            100: '#ffe4e6',
+                            500: '#f43f5e',
+                            600: '#e11d48',
+                            700: '#be123c',
+                        }
+                    },
+                    fontFamily: {
+                        mono: ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'Consolas', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
     <script src="/js/libs/lucide.min.js"></script>
     <link rel="stylesheet" href="/css/app.css">
 </head>
-<body class="bg-slate-50 font-sans text-slate-800 antialiased min-h-screen flex flex-col pb-20 md:pb-0">
+<body class="bg-slate-50 font-sans text-slate-800 antialiased min-h-screen flex flex-col pb-24 md:pb-0 selection:bg-rose-500 selection:text-white">
 
-    <header class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
-        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Top Sticky Header (Modern Financial Console Shell) -->
+    <header class="glass-header sticky top-0 z-50 transition-all duration-200">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
-                <div class="flex items-center space-x-3">
-                    <div class="p-2 bg-red-500 rounded-lg text-white">
-                        <i data-lucide="trending-up" class="w-6 h-6"></i>
+                <!-- Brand / Logo Area -->
+                <div class="flex items-center space-x-3.5">
+                    <div class="p-2.5 bg-gradient-to-tr from-rose-600 to-rose-500 rounded-xl text-white shadow-md shadow-rose-500/20 flex items-center justify-center">
+                        <i data-lucide="trending-up" class="w-5 h-5"></i>
                     </div>
                     <div>
-                        <h1 class="text-lg font-bold text-slate-900 tracking-tight">A股涨停复盘数据看板</h1>
-                        <p class="text-xs text-slate-500">智能量化每日行情与个股查询系统</p>
+                        <div class="flex items-center space-x-2">
+                            <h1 class="text-base font-bold text-slate-900 tracking-tight">A股涨停复盘看板</h1>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1 animate-status-pulse"></span>PRO
+                            </span>
+                        </div>
+                        <p class="text-[11px] text-slate-500 hidden sm:block">每日行情量化复盘与个股动因洞察系统</p>
                     </div>
                 </div>
 
-                <!-- Tabs switcher -->
-                <nav class="hidden md:flex space-x-1 bg-slate-100 p-1 rounded-xl" aria-label="Tabs">
-                    <button data-tab="search" class="px-4 py-2 text-sm font-semibold rounded-lg flex items-center space-x-2 transition duration-150 ease-in-out bg-white text-slate-900 shadow-sm">
-                        <i data-lucide="search" class="w-4 h-4 text-red-500"></i>
+                <!-- Desktop Segmented Tabs Switcher (Linear / macOS Style) -->
+                <nav class="hidden md:flex space-x-1 bg-slate-200/60 p-1 rounded-xl border border-slate-200" aria-label="Tabs">
+                    <button data-tab="search" class="px-4 py-1.5 text-xs font-semibold rounded-lg flex items-center space-x-2 transition-all duration-150 bg-white text-slate-900 shadow-sm border border-slate-200/60">
+                        <i data-lucide="search" class="w-3.5 h-3.5 text-rose-600"></i>
                         <span>个股查询</span>
                     </button>
-                    <button data-tab="review" class="px-4 py-2 text-sm font-semibold rounded-lg flex items-center space-x-2 transition duration-150 ease-in-out text-slate-600 hover:text-slate-900">
-                        <i data-lucide="calendar" class="w-4 h-4"></i>
+                    <button data-tab="review" class="px-4 py-1.5 text-xs font-semibold rounded-lg flex items-center space-x-2 transition-all duration-150 text-slate-600 hover:text-slate-900">
+                        <i data-lucide="calendar" class="w-3.5 h-3.5 text-slate-400"></i>
                         <span>每日复盘</span>
                     </button>
-                    <button data-tab="active" class="px-4 py-2 text-sm font-semibold rounded-lg flex items-center space-x-2 transition duration-150 ease-in-out text-slate-600 hover:text-slate-900">
-                        <i data-lucide="award" class="w-4 h-4"></i>
+                    <button data-tab="active" class="px-4 py-1.5 text-xs font-semibold rounded-lg flex items-center space-x-2 transition-all duration-150 text-slate-600 hover:text-slate-900">
+                        <i data-lucide="flame" class="w-3.5 h-3.5 text-slate-400"></i>
                         <span>活跃板块</span>
                     </button>
-                    <button data-tab="upload" class="px-4 py-2 text-sm font-semibold rounded-lg flex items-center space-x-2 transition duration-150 ease-in-out text-slate-600 hover:text-slate-900">
-                        <i data-lucide="cloud-upload" class="w-4 h-4"></i>
-                        <span>上传数据</span>
+                    <button data-tab="upload" class="px-4 py-1.5 text-xs font-semibold rounded-lg flex items-center space-x-2 transition-all duration-150 text-slate-600 hover:text-slate-900">
+                        <i data-lucide="cloud-upload" class="w-3.5 h-3.5 text-slate-400"></i>
+                        <span>上传暂存</span>
                     </button>
                 </nav>
             </div>
         </div>
     </header>
 
-    <main class="flex-grow max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Main Container -->
+    <main class="flex-grow max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+
         <!-- ==================== TAB 1: STOCK SEARCH ==================== -->
         <section id="tab-content-search" class="space-y-6">
-            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm w-full space-y-4">
-                <h2 class="text-lg font-bold text-slate-900">个股历史涨停查询</h2>
-                <p class="text-xs text-slate-500">输入个股名称（如：大唐电信）或六位数股票代码（如：600198）即可快速查询其全部历史涨停复盘记录。</p>
-                <div class="relative rounded-xl shadow-sm flex">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <i data-lucide="search" class="h-5 w-5 text-slate-400"></i>
+            <!-- Command Palette Filter Card -->
+            <div class="financial-card p-6 rounded-2xl space-y-5">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                        <h2 class="text-base font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                            <i data-lucide="compass" class="w-4 h-4 text-rose-600"></i>
+                            <span>个股与概念历史涨停检索</span>
+                        </h2>
+                        <p class="text-xs text-slate-500 mt-0.5">支持股票代码（如 600198）、名称、所属板块概念及涨停动因交叉检索</p>
                     </div>
-                    <input type="text" id="search-input" placeholder="输入股票名称、代码查询..." class="block w-full pl-10 pr-24 py-3 sm:text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-slate-50">
-                    <button id="search-btn" class="absolute right-1.5 top-1.5 px-4 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-semibold shadow-sm transition duration-150 flex items-center space-x-1.5">
+                </div>
+
+                <!-- Main Search Bar -->
+                <div class="relative flex items-center">
+                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                        <i data-lucide="search" class="h-4 w-4"></i>
+                    </div>
+                    <input type="text" id="search-input" placeholder="输入股票名称、六位数代码（如：大唐电信、600198）..." class="block w-full pl-10 pr-24 py-2.5 text-sm bg-slate-50/80 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 focus:bg-white transition-all placeholder:text-slate-400">
+                    <button id="search-btn" class="absolute right-1.5 top-1.5 bottom-1.5 px-4 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-semibold shadow-sm transition flex items-center space-x-1.5">
                         <span>查询</span>
+                        <kbd class="hidden sm:inline-block px-1.5 py-0.2 bg-rose-700/60 rounded text-[10px] text-rose-100 font-mono">↵</kbd>
                     </button>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-100">
-                    <div class="space-y-2 flex flex-col">
-                        <label for="sector-filter-input" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider">板块/概念 过滤 (AND 逻辑求交集)</label>
-                        <div class="relative rounded-xl shadow-sm flex">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <i data-lucide="hash" class="h-4 w-4 text-slate-400"></i>
+
+                <!-- Advanced Filters (Sector & Reason) -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5 pt-4 border-t border-slate-100">
+                    <!-- Sector Filter Column -->
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <label for="sector-filter-input" class="text-xs font-semibold text-slate-600 flex items-center gap-1.5">
+                                <i data-lucide="layers" class="w-3.5 h-3.5 text-slate-400"></i>
+                                <span>板块 / 概念 过滤 (求交集)</span>
+                            </label>
+                            <div class="flex items-center space-x-1.5 text-xs">
+                                <span class="text-[11px] text-slate-400">模式:</span>
+                                <div class="inline-flex bg-slate-100 p-0.5 rounded-lg border border-slate-200" role="radiogroup">
+                                    <button id="btn-mode-exact" class="px-2 py-0.5 text-[11px] font-bold rounded-md transition bg-white text-slate-800 shadow-xs">精确</button>
+                                    <button id="btn-mode-fuzzy" class="px-2 py-0.5 text-[11px] font-medium rounded-md transition text-slate-500 hover:text-slate-800">模糊</button>
+                                </div>
                             </div>
-                            <input type="text" id="sector-filter-input" placeholder="输入板块名称（如：机器人），按回车..." class="block w-full pl-9 pr-16 py-1.5 text-xs border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-slate-50">
-                            <button id="sector-add-btn" class="absolute right-1 top-1 bottom-1 px-3 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xxs font-semibold shadow-sm transition duration-150 flex items-center justify-center">
+                        </div>
+                        <div class="relative flex">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                <i data-lucide="hash" class="h-3.5 w-3.5"></i>
+                            </div>
+                            <input type="text" id="sector-filter-input" placeholder="输入板块名称（如：机器人），按回车..." class="block w-full pl-9 pr-14 py-2 text-xs bg-slate-50/80 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 focus:bg-white transition">
+                            <button id="sector-add-btn" class="absolute right-1 top-1 bottom-1 px-2.5 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-[11px] font-medium transition flex items-center justify-center">
                                 <span>添加</span>
                             </button>
                         </div>
-                        <div class="flex items-center space-x-2 mt-1 text-xs">
-                            <span class="font-bold text-slate-400 text-xxs uppercase tracking-wider">匹配模式:</span>
-                            <div class="inline-flex bg-slate-100 p-0.5 rounded-lg border border-slate-200" role="radiogroup">
-                                <button id="btn-mode-exact" class="px-2 py-0.5 text-xxs font-bold rounded-md transition duration-150 bg-white text-slate-855 shadow-sm">精确</button>
-                                <button id="btn-mode-fuzzy" class="px-2 py-0.5 text-xxs font-bold rounded-md transition duration-150 text-slate-500 hover:text-slate-800">模糊 (LIKE)</button>
-                            </div>
-                        </div>
-                        <div id="sector-tags-container" class="flex flex-wrap gap-1.5 mt-1"></div>
+                        <div id="sector-tags-container" class="flex flex-wrap gap-1.5 min-h-[22px]"></div>
                     </div>
-                    <div class="space-y-2 flex flex-col">
-                        <label for="reason-filter-input" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider">概念/原因 过滤 (支持多个，AND 模糊求交集)</label>
-                        <div class="relative rounded-xl shadow-sm flex">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <i data-lucide="tag" class="h-4 w-4 text-slate-400"></i>
+
+                    <!-- Reason Filter Column -->
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <label for="reason-filter-input" class="text-xs font-semibold text-slate-600 flex items-center gap-1.5">
+                                <i data-lucide="tag" class="w-3.5 h-3.5 text-slate-400"></i>
+                                <span>涨停动因 / 逻辑 过滤 (求交集)</span>
+                            </label>
+                            <span class="text-[11px] text-slate-400 italic">*支持模糊检索</span>
+                        </div>
+                        <div class="relative flex">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                <i data-lucide="sparkles" class="h-3.5 w-3.5"></i>
                             </div>
-                            <input type="text" id="reason-filter-input" placeholder="输入涨停动因（如：并购、低空），按回车..." class="block w-full pl-9 pr-16 py-1.5 text-xs border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-slate-50">
-                            <button id="reason-add-btn" class="absolute right-1 top-1 bottom-1 px-3 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xxs font-semibold shadow-sm transition duration-150 flex items-center justify-center">
+                            <input type="text" id="reason-filter-input" placeholder="输入涨停动因（如：并购、低空），按回车..." class="block w-full pl-9 pr-14 py-2 text-xs bg-slate-50/80 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 focus:bg-white transition">
+                            <button id="reason-add-btn" class="absolute right-1 top-1 bottom-1 px-2.5 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-[11px] font-medium transition flex items-center justify-center">
                                 <span>添加</span>
                             </button>
                         </div>
-                        <div class="text-xxs text-slate-400 mt-1 italic">*本项仅支持模糊匹配</div>
-                        <div id="reason-tags-container" class="flex flex-wrap gap-1.5 mt-1"></div>
+                        <div id="reason-tags-container" class="flex flex-wrap gap-1.5 min-h-[22px]"></div>
                     </div>
                 </div>
             </div>
+
+            <!-- Results Section -->
             <div class="w-full">
-                <div id="search-loader" class="hidden flex justify-center py-10">
-                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500"></div>
-                </div>
-                <div id="search-empty-state" class="bg-white border border-slate-200 rounded-2xl p-12 text-center shadow-sm">
-                    <div class="inline-flex p-4 bg-slate-50 rounded-full text-slate-400 mb-4">
-                        <i data-lucide="pie-chart" class="w-10 h-10"></i>
+                <!-- Loader -->
+                <div id="search-loader" class="hidden flex justify-center py-16">
+                    <div class="flex flex-col items-center space-y-3">
+                        <div class="w-8 h-8 border-2 border-rose-600 border-t-transparent rounded-full animate-spin"></div>
+                        <span class="text-xs text-slate-400 font-medium">正在量化分析检索数据...</span>
                     </div>
-                    <h3 class="text-base font-semibold text-slate-900">暂无查询数据</h3>
-                    <p class="text-xs text-slate-400 mt-1">请输入有效的股票名、代码，或者添加概念板块、涨停动因过滤来查询历史数据。</p>
                 </div>
+
+                <!-- Empty State -->
+                <div id="search-empty-state" class="financial-card rounded-2xl p-12 text-center">
+                    <div class="inline-flex p-3.5 bg-slate-100/80 rounded-2xl text-slate-400 mb-3 border border-slate-200/50">
+                        <i data-lucide="bar-chart-2" class="w-8 h-8"></i>
+                    </div>
+                    <h3 class="text-sm font-bold text-slate-800">暂无查询数据</h3>
+                    <p class="text-xs text-slate-400 mt-1 max-w-sm mx-auto">请输入有效的股票名、六位数代码，或添加概念板块与涨停动因标签进行多维穿透检索。</p>
+                </div>
+
+                <!-- Results Output -->
                 <div id="search-results-container" class="hidden space-y-4">
-                    <div class="bg-white border border-slate-200 rounded-2xl shadow-sm px-6 py-4 flex justify-between items-center bg-slate-50/50">
-                        <div>
-                            <h3 id="search-result-title" class="text-sm font-bold text-slate-900">查询结果</h3>
-                            <p id="search-result-count" class="text-xs text-slate-400 mt-0.5">找到 -- 条历史纪录</p>
+                    <div class="financial-card rounded-2xl px-5 py-3.5 flex justify-between items-center bg-white">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-2 h-2 rounded-full bg-rose-600"></div>
+                            <div>
+                                <h3 id="search-result-title" class="text-xs font-bold text-slate-900">查询结果</h3>
+                                <p id="search-result-count" class="text-[11px] text-slate-400 font-mono font-medium mt-0.5">找到 -- 条历史纪录</p>
+                            </div>
                         </div>
                     </div>
                     <div id="search-results-body" class="space-y-4"></div>
@@ -123,194 +195,231 @@
 
         <!-- ==================== TAB 2: DAILY REVIEW ==================== -->
         <section id="tab-content-review" class="hidden space-y-6">
-            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div class="flex items-center space-x-3">
-                    <div class="p-2.5 bg-slate-100 rounded-xl text-slate-600">
-                        <i data-lucide="filter" class="w-5 h-5"></i>
+            <!-- Review Top Bar -->
+            <div class="financial-card p-5 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div class="flex items-center space-x-3.5">
+                    <div class="p-2.5 bg-slate-100/80 rounded-xl text-slate-600 border border-slate-200/60">
+                        <i data-lucide="calendar" class="w-5 h-5 text-rose-600"></i>
                     </div>
                     <div>
-                        <label for="date-select" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider">选择复盘日期</label>
-                        <div class="flex items-center gap-2 mt-1">
-                            <select id="date-select" class="block w-48 pl-3 pr-10 py-1.5 text-base border-slate-300 focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm rounded-lg bg-slate-50 font-medium text-slate-900">
+                        <label for="date-select" class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider">选择复盘交易日</label>
+                        <div class="flex items-center gap-2.5 mt-1">
+                            <select id="date-select" class="block w-48 pl-3 pr-8 py-1.5 text-xs border border-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 rounded-xl bg-slate-50 font-mono font-semibold text-slate-900">
                                 <option value="">加载中...</option>
                             </select>
-                            <!-- 优化：将按钮内嵌并转为精致、低调的辅色按钮，在桌面端和移动端都具备完美高亮 -->
-                            <button id="review-edit-btn" class="hidden px-3 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-500 hover:text-slate-800 rounded-lg text-xs font-semibold shadow-sm transition duration-150 flex items-center space-x-1.5 h-9">
-                                <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                            <button id="review-edit-btn" class="hidden px-3 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-600 hover:text-slate-900 rounded-xl text-xs font-medium transition flex items-center space-x-1.5 h-8">
+                                <i data-lucide="edit-3" class="w-3.5 h-3.5 text-slate-400"></i>
                                 <span>修正数据</span>
                             </button>
                         </div>
                     </div>
                 </div>
-                <div id="selected-date-info" class="text-right hidden md:block">
-                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700 border border-red-200">
-                        <span class="w-1.5 h-1.5 mr-1.5 rounded-full bg-red-500"></span>数据状态：已同步
+                <div id="selected-date-info" class="hidden md:flex items-center space-x-2">
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200/80">
+                        <span class="w-1.5 h-1.5 mr-1.5 rounded-full bg-rose-600 animate-pulse"></span>已归档入库
                     </span>
                 </div>
             </div>
 
-            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center space-x-4">
-                    <div class="p-4 bg-blue-50 rounded-xl text-blue-600"><i data-lucide="box" class="w-6 h-6"></i></div>
+            <!-- KPI Metric Stats Cards -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Stat 1 -->
+                <div class="financial-card p-4 rounded-2xl flex items-center space-x-3.5">
+                    <div class="p-3 bg-blue-50/80 border border-blue-100 rounded-xl text-blue-600">
+                        <i data-lucide="flame" class="w-5 h-5"></i>
+                    </div>
                     <div>
-                        <p class="text-xs font-medium text-slate-400">涨停家数</p>
-                        <h3 id="stat-count" class="text-2xl font-bold text-slate-900 mt-1">--</h3>
+                        <p class="text-[11px] font-semibold text-slate-400">涨停总家数</p>
+                        <h3 id="stat-count" class="text-xl sm:text-2xl font-bold font-mono text-slate-900 tracking-tight mt-0.5">--</h3>
                     </div>
                 </div>
-                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center space-x-4">
-                    <div class="p-4 bg-emerald-50 rounded-xl text-emerald-600"><i data-lucide="chevrons-up" class="w-6 h-6"></i></div>
+                <!-- Stat 2 -->
+                <div class="financial-card p-4 rounded-2xl flex items-center space-x-3.5">
+                    <div class="p-3 bg-emerald-50/80 border border-emerald-100 rounded-xl text-emerald-600">
+                        <i data-lucide="trending-up" class="w-5 h-5"></i>
+                    </div>
                     <div>
-                        <p class="text-xs font-medium text-slate-400">晋级率</p>
-                        <h3 id="stat-upgrade" class="text-2xl font-bold text-slate-900 mt-1">--%</h3>
+                        <p class="text-[11px] font-semibold text-slate-400">晋级率 (连板)</p>
+                        <h3 id="stat-upgrade" class="text-xl sm:text-2xl font-bold font-mono text-slate-900 tracking-tight mt-0.5">--%</h3>
                     </div>
                 </div>
-                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center space-x-4">
-                    <div class="p-4 bg-rose-50 rounded-xl text-rose-600"><i data-lucide="zap-off" class="w-6 h-6"></i></div>
+                <!-- Stat 3 -->
+                <div class="financial-card p-4 rounded-2xl flex items-center space-x-3.5">
+                    <div class="p-3 bg-rose-50/80 border border-rose-100 rounded-xl text-rose-600">
+                        <i data-lucide="zap-off" class="w-5 h-5"></i>
+                    </div>
                     <div>
-                        <p class="text-xs font-medium text-slate-400">炸板率</p>
-                        <h3 id="stat-broken" class="text-2xl font-bold text-slate-900 mt-1">--%</h3>
+                        <p class="text-[11px] font-semibold text-slate-400">炸板率</p>
+                        <h3 id="stat-broken" class="text-xl sm:text-2xl font-bold font-mono text-slate-900 tracking-tight mt-0.5">--%</h3>
                     </div>
                 </div>
-                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center space-x-4">
-                    <div class="p-4 bg-purple-50 rounded-xl text-purple-600"><i data-lucide="activity" class="w-6 h-6"></i></div>
+                <!-- Stat 4 -->
+                <div class="financial-card p-4 rounded-2xl flex items-center space-x-3.5">
+                    <div class="p-3 bg-purple-50/80 border border-purple-100 rounded-xl text-purple-600">
+                        <i data-lucide="activity" class="w-5 h-5"></i>
+                    </div>
                     <div>
-                        <p class="text-xs font-medium text-slate-400">竞价涨幅</p>
-                        <h3 id="stat-bidding" class="text-2xl font-bold text-slate-900 mt-1">--%</h3>
+                        <p class="text-[11px] font-semibold text-slate-400">竞价涨幅</p>
+                        <h3 id="stat-bidding" class="text-xl sm:text-2xl font-bold font-mono text-slate-900 tracking-tight mt-0.5">--%</h3>
                     </div>
                 </div>
             </div>
 
-            <div id="review-image-card" class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden hidden">
-                <button id="image-toggle-btn" class="w-full px-6 py-4 flex items-center justify-between bg-slate-50/50 hover:bg-slate-50 transition-colors border-b border-slate-100 font-bold">
-                    <div class="flex items-center space-x-3">
-                        <div class="p-1.5 bg-red-50 text-red-500 rounded-lg"><i data-lucide="image" class="w-4 h-4"></i></div>
-                        <span class="text-sm font-extrabold text-slate-900">查看当日复盘原始长图</span>
+            <!-- Original Review Image Card (Collapsible) -->
+            <div id="review-image-card" class="financial-card rounded-2xl overflow-hidden hidden">
+                <button id="image-toggle-btn" class="w-full px-5 py-3.5 flex items-center justify-between bg-slate-50/60 hover:bg-slate-50 transition border-b border-slate-100 text-left">
+                    <div class="flex items-center space-x-2.5">
+                        <div class="p-1.5 bg-rose-50 text-rose-600 rounded-lg"><i data-lucide="image" class="w-4 h-4"></i></div>
+                        <span class="text-xs font-bold text-slate-800">查看当日复盘原始长图</span>
                     </div>
-                    <div class="p-1 text-slate-400 flex items-center space-x-2">
-                        <span id="image-toggle-status" class="text-xs font-semibold text-slate-400">展开</span>
-                        <i id="image-chevron" data-lucide="chevron-down" class="w-5 h-5 transition-transform duration-150"></i>
+                    <div class="flex items-center space-x-1.5 text-slate-400">
+                        <span id="image-toggle-status" class="text-[11px] font-medium text-slate-500">展开</span>
+                        <i id="image-chevron" data-lucide="chevron-down" class="w-4 h-4 transition-transform duration-200"></i>
                     </div>
                 </button>
-                <div id="image-collapse" class="hidden p-4 bg-slate-50 border-t border-slate-100 flex justify-center">
-                    <img id="review-image" src="" alt="复盘长图" class="max-w-full md:max-w-3xl h-auto rounded-xl shadow-md border border-slate-200" />
+                <div id="image-collapse" class="hidden p-4 bg-slate-50/40 border-t border-slate-100 flex justify-center">
+                    <img id="review-image" src="" alt="复盘长图" class="max-w-full md:max-w-3xl h-auto rounded-xl shadow-md border border-slate-200/80" />
                 </div>
             </div>
 
+            <!-- Loader -->
             <div id="review-loader" class="hidden flex justify-center py-20">
-                <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-red-500"></div>
+                <div class="flex flex-col items-center space-y-3">
+                    <div class="w-8 h-8 border-2 border-rose-600 border-t-transparent rounded-full animate-spin"></div>
+                    <span class="text-xs text-slate-400 font-medium">正在解析板块分类...</span>
+                </div>
             </div>
+
+            <!-- Accordion Container -->
             <div id="sectors-accordion" class="w-full space-y-4"></div>
         </section>
 
         <!-- ==================== TAB 3: ACTIVE SECTORS ==================== -->
         <section id="tab-content-active" class="hidden space-y-6">
-            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <!-- Active Filter Toolbar -->
+            <div class="financial-card p-5 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div class="flex flex-wrap items-center gap-4">
-                    <div class="flex items-center space-x-2">
-                        <div class="p-2 bg-slate-100 rounded-xl text-slate-600"><i data-lucide="clock" class="w-5 h-5"></i></div>
+                    <div class="flex items-center space-x-2.5">
+                        <div class="p-2 bg-slate-100/80 rounded-xl text-slate-600 border border-slate-200/60">
+                            <i data-lucide="clock" class="w-4 h-4 text-rose-600"></i>
+                        </div>
                         <div>
-                            <label for="active-scope-select" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider">分析时间跨度</label>
-                            <select id="active-scope-select" class="mt-1 block w-44 pl-3 pr-10 py-1.5 text-base border-slate-300 focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm rounded-lg bg-slate-50 font-medium text-slate-900">
+                            <label for="active-scope-select" class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider">时间跨度</label>
+                            <select id="active-scope-select" class="mt-0.5 block w-44 pl-3 pr-8 py-1.5 text-xs border border-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 rounded-xl bg-slate-50 font-semibold text-slate-900">
                                 <option value="7">近 7 个交易日</option>
                                 <option value="30" selected>近 30 个交易日</option>
                                 <option value="all">全历史数据</option>
                             </select>
                         </div>
                     </div>
-                    <div class="relative rounded-xl shadow-sm w-64 mt-4 md:mt-0 pt-1">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><i data-lucide="filter" class="h-4 w-4 text-slate-400"></i></div>
-                        <input type="text" id="active-search-input" placeholder="筛选概念板块名称..." class="block w-full pl-9 pr-4 py-2 sm:text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-slate-50">
+                    <div class="relative w-64 pt-3.5 md:pt-0">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                            <i data-lucide="filter" class="h-3.5 w-3.5"></i>
+                        </div>
+                        <input type="text" id="active-search-input" placeholder="筛选概念板块名称..." class="block w-full pl-9 pr-3.5 py-1.5 text-xs bg-slate-50/80 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 focus:bg-white transition">
                     </div>
                 </div>
-                <div class="text-right hidden md:block">
-                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        <span class="w-1.5 h-1.5 mr-1.5 rounded-full bg-emerald-500"></span>已计算热度龙头股
+                <div class="hidden md:flex items-center space-x-2">
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
+                        <span class="w-1.5 h-1.5 mr-1.5 rounded-full bg-emerald-500"></span>已计算领涨龙头权重
                     </span>
                 </div>
             </div>
+
+            <!-- Loader -->
             <div id="active-loader" class="hidden flex justify-center py-20">
-                <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-red-500"></div>
+                <div class="flex flex-col items-center space-y-3">
+                    <div class="w-8 h-8 border-2 border-rose-600 border-t-transparent rounded-full animate-spin"></div>
+                    <span class="text-xs text-slate-400 font-medium">正在计算板块热度矩阵...</span>
+                </div>
             </div>
-            <div id="active-sectors-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"></div>
+
+            <!-- Active Grid -->
+            <div id="active-sectors-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5"></div>
         </section>
 
-        <!-- ==================== TAB 4: UPLOAD DATA ==================== -->
+        <!-- ==================== TAB 4: UPLOAD DATA & CONSOLE ==================== -->
         <section id="tab-content-upload" class="hidden space-y-6">
-            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <!-- Upload Drop Area -->
+            <div class="financial-card p-6 rounded-2xl space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div>
-                        <h2 class="text-lg font-bold text-slate-900">上传复盘图片</h2>
-                        <p class="text-xs text-slate-500 mt-1">支持拖入或点击选择 A股涨停复盘的长图（.png, .jpg, .jpeg, .webp），智能识别并自动入库。</p>
+                        <h2 class="text-base font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                            <i data-lucide="cloud-upload" class="w-4 h-4 text-rose-600"></i>
+                            <span>上传复盘图片与极速云暂存</span>
+                        </h2>
+                        <p class="text-xs text-slate-500 mt-0.5">支持拖入多张长图（PNG, JPG, WEBP），直接批量上传至云端 R2 待处理队列</p>
                     </div>
                 </div>
-                <div id="drop-zone" class="border-2 border-dashed border-slate-300 hover:border-red-400 bg-slate-50/50 hover:bg-slate-50 rounded-2xl p-8 text-center cursor-pointer transition-all duration-150 flex flex-col items-center justify-center min-h-[220px]">
+                <div id="drop-zone" class="border-2 border-dashed border-slate-300 hover:border-rose-500/80 bg-slate-50/50 hover:bg-rose-50/20 rounded-2xl p-8 text-center cursor-pointer transition-all duration-200 flex flex-col items-center justify-center min-h-[180px]">
                     <input type="file" id="file-input" class="hidden" accept=".png,.jpg,.jpeg,.webp" multiple>
-                    <div class="p-4 bg-white rounded-full text-slate-400 shadow-sm mb-4 border border-slate-100"><i data-lucide="cloud-upload" class="w-10 h-10 text-red-500"></i></div>
-                    <p class="text-sm font-bold text-slate-700">将复盘长图拖拽至此，或 <span class="text-red-500 hover:text-red-600">点击上传</span></p>
-                    <p class="text-xxs text-slate-400 mt-2">支持常见图片格式：PNG, JPG, JPEG, WEBP</p>
+                    <div class="p-3 bg-white rounded-2xl text-rose-600 shadow-sm mb-3 border border-slate-200/60">
+                        <i data-lucide="upload" class="w-7 h-7"></i>
+                    </div>
+                    <p class="text-xs font-bold text-slate-700">将复盘长图拖拽至此，或 <span class="text-rose-600 hover:text-rose-700 underline underline-offset-2">点击选择文件</span></p>
+                    <p class="text-[11px] text-slate-400 mt-1">支持批量上传，单张图片建议不超过 20MB</p>
                 </div>
             </div>
 
-            <!-- ==================== STASHED PENDING CONSOLE PANEL ==================== -->
-            <div id="pending-console-container" class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+            <!-- Stashed Pending Queue Panel -->
+            <div id="pending-console-container" class="financial-card p-6 rounded-2xl space-y-4">
                 <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-100 pb-4">
-                    <div class="min-w-0">
-                        <h3 class="text-base font-bold text-slate-900 flex items-center space-x-2">
-                            <i data-lucide="list-todo" class="w-5 h-5 text-red-500"></i>
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-900 flex items-center space-x-2">
+                            <i data-lucide="layers" class="w-4 h-4 text-rose-600"></i>
                             <span>待处理暂存队列 (云端 R2)</span>
                         </h3>
-                        <p class="text-xs text-slate-500 mt-1">这里列出已批量上传至 R2 暂存区的复盘长图，点击单项解析或一键顺序处理正式入库。</p>
+                        <p class="text-xs text-slate-500 mt-0.5">批量图片将在此安全暂存，可自由选择单项解析或一键多线程极速入库</p>
                     </div>
                     <div class="flex flex-col lg:flex-row items-stretch lg:items-center gap-3 w-full lg:w-auto lg:shrink-0">
-                        <!-- 并发线程选择框 -->
-                        <div class="flex items-center justify-between lg:justify-start space-x-1.5 bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 lg:py-1.5 text-xs text-slate-500 font-semibold shadow-sm w-full lg:w-auto whitespace-nowrap">
+                        <!-- Concurrency selector -->
+                        <div class="flex items-center justify-between lg:justify-start space-x-1.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-500 font-semibold shadow-xs">
                             <div class="flex items-center space-x-1.5">
-                                <i data-lucide="zap" class="w-3.5 h-3.5 text-red-500"></i>
-                                <span>并行线程:</span>
+                                <i data-lucide="zap" class="w-3.5 h-3.5 text-rose-600"></i>
+                                <span>并发线程:</span>
                             </div>
-                            <select id="pending-concurrency-select" class="bg-transparent focus:outline-none text-slate-800 font-bold select-none cursor-pointer py-0 my-0 border-none">
-                                <option value="1">1 (最稳健)</option>
-                                <option value="2">2 (双倍速)</option>
-                                <option value="3" selected>3 (推荐三倍速)</option>
+                            <select id="pending-concurrency-select" class="bg-transparent focus:outline-none text-slate-800 font-bold select-none cursor-pointer py-0 my-0 border-none font-mono">
+                                <option value="1">1 (稳健)</option>
+                                <option value="2">2 (双倍)</option>
+                                <option value="3" selected>3 (推荐)</option>
                                 <option value="5">5 (极速)</option>
-                                <option value="10">10 (火力全开)</option>
+                                <option value="10">10 (全开)</option>
                             </select>
                         </div>
-
-                        <!-- 控制按钮对 -->
+                        <!-- Controls -->
                         <div class="grid grid-cols-2 gap-2 w-full lg:flex lg:items-center lg:space-x-2 lg:w-auto">
-                            <button id="pending-refresh-btn" class="justify-center px-4 py-2 lg:px-3 lg:py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-600 hover:text-slate-900 rounded-xl text-xs font-semibold shadow-sm transition duration-150 flex items-center space-x-1.5 w-full lg:w-auto whitespace-nowrap">
+                            <button id="pending-refresh-btn" class="justify-center px-3.5 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-600 hover:text-slate-900 rounded-xl text-xs font-semibold transition flex items-center space-x-1.5">
                                 <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
                                 <span>刷新列表</span>
                             </button>
-                            <button id="pending-process-all-btn" class="justify-center px-4 py-2 lg:px-4 lg:py-1.5 bg-red-500 hover:bg-red-600 text-white border border-transparent rounded-xl text-xs font-bold shadow-sm transition duration-150 flex items-center space-x-1.5 w-full lg:w-auto whitespace-nowrap">
+                            <button id="pending-process-all-btn" class="justify-center px-4 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center space-x-1.5">
                                 <i data-lucide="play" class="w-3.5 h-3.5"></i>
-                                <span>一键并行处理</span>
+                                <span>一键并发处理</span>
                             </button>
                         </div>
                     </div>
                 </div>
 
-                <div class="overflow-hidden border border-slate-200/60 rounded-2xl">
-                    <!-- 桌面端表头 (PC 专享，手机端自动隐藏) -->
-                    <div class="hidden md:grid grid-cols-12 gap-4 bg-slate-50/75 px-6 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider border-b border-slate-100">
+                <!-- Table Container -->
+                <div class="overflow-hidden border border-slate-200/80 rounded-xl">
+                    <!-- Desktop Table Header -->
+                    <div class="hidden md:grid grid-cols-12 gap-4 bg-slate-50/80 px-5 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200/60">
                         <div class="col-span-1">缩略图</div>
-                        <div class="col-span-3">原始文件名 / 上传时间</div>
+                        <div class="col-span-3">文件名 / 上传时间</div>
                         <div class="col-span-4">目标日期 (智能建议)</div>
                         <div class="col-span-1">大小</div>
                         <div class="col-span-3 text-right">操作</div>
                     </div>
-
-                    <!-- 待处理暂存队列列表主体 -->
+                    <!-- Queue List Body -->
                     <div id="pending-tbody" class="divide-y divide-slate-100 bg-white">
-                        <div id="pending-empty-row" class="text-center py-16 text-slate-400">
-                            <div class="flex flex-col items-center justify-center space-y-3">
-                                <div class="p-3 bg-slate-50 rounded-full text-slate-300 border border-slate-100">
-                                    <i data-lucide="inbox" class="w-10 h-10 text-slate-300"></i>
+                        <div id="pending-empty-row" class="text-center py-12 text-slate-400">
+                            <div class="flex flex-col items-center justify-center space-y-2.5">
+                                <div class="p-3 bg-slate-50 rounded-full text-slate-300 border border-slate-200/50">
+                                    <i data-lucide="inbox" class="w-8 h-8"></i>
                                 </div>
-                                <div class="text-sm font-semibold text-slate-600">云端暂存队列为空</div>
-                                <p class="text-xs text-slate-400 max-w-xs leading-relaxed mx-auto px-4">
-                                    您可以拖拽或选择多个复盘长图到上方区域进行“极速云暂存”，然后再到此处统一进行智能解析与 D1 入库。
+                                <div class="text-xs font-semibold text-slate-600">云端暂存队列为空</div>
+                                <p class="text-[11px] text-slate-400 max-w-xs mx-auto">
+                                    拖拽或选择复盘长图至上方区域即可进入云端暂存池。
                                 </p>
                             </div>
                         </div>
@@ -318,71 +427,53 @@
                 </div>
             </div>
 
-            <!-- ==================== LOCAL PROXY ADVANCED SETTINGS PANEL ==================== -->
-            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                <!-- Header (Click to collapse/expand) -->
-                <button id="local-proxy-settings-toggle" class="w-full flex items-center justify-between p-6 hover:bg-slate-50 transition duration-150 text-left">
+            <!-- Advanced Local OCR Proxy Settings -->
+            <div class="financial-card rounded-2xl overflow-hidden">
+                <button id="local-proxy-settings-toggle" class="w-full flex items-center justify-between p-5 hover:bg-slate-50/50 transition text-left">
                     <div class="flex items-center space-x-3">
-                        <div class="p-2 bg-slate-100 rounded-lg text-slate-600">
-                            <i data-lucide="settings" class="w-5 h-5"></i>
+                        <div class="p-2 bg-slate-100 rounded-xl text-slate-600 border border-slate-200/60">
+                            <i data-lucide="settings" class="w-4 h-4 text-slate-500"></i>
                         </div>
                         <div>
-                            <h3 class="text-base font-bold text-slate-900">高级设置：本地 OCR 中转</h3>
-                            <p class="text-xs text-slate-500 mt-0.5">配置本地大模型或中转服务（如 OneAPI / NewAPI / LlamaEdge / LM Studio），优先进行本地客户端解析。</p>
+                            <h3 class="text-xs font-bold text-slate-900">高级设置：客户端 OCR 中转代理</h3>
+                            <p class="text-[11px] text-slate-500 mt-0.5">配置私有大模型或本地服务（OneAPI / LM Studio 等），优先由浏览器直连解析</p>
                         </div>
                     </div>
-                    <i id="local-proxy-settings-chevron" data-lucide="chevron-down" class="w-5 h-5 text-slate-400 transition-transform duration-200"></i>
+                    <i id="local-proxy-settings-chevron" data-lucide="chevron-down" class="w-4 h-4 text-slate-400 transition-transform duration-200"></i>
                 </button>
 
-                <!-- Collapsible Content -->
-                <div id="local-proxy-settings-content" class="hidden border-t border-slate-100 p-6 bg-slate-50/30 space-y-5">
-                    <!-- Enable Toggle -->
-                    <div class="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-200 shadow-sm">
+                <!-- Collapsible Settings Form -->
+                <div id="local-proxy-settings-content" class="hidden border-t border-slate-100 p-5 bg-slate-50/40 space-y-4">
+                    <div class="flex items-center justify-between p-3.5 bg-white rounded-xl border border-slate-200">
                         <div class="space-y-0.5 pr-4">
-                            <label for="local-proxy-enable" class="text-sm font-bold text-slate-800 cursor-pointer">启用本地中转优先</label>
-                            <p class="text-xs text-slate-400">开启后，点击“解析”将优先通过您的本地浏览器发起 OCR 请求，避免服务器端中转额度消耗并提升网络速度。</p>
+                            <label for="local-proxy-enable" class="text-xs font-bold text-slate-800 cursor-pointer">启用本地中转优先</label>
+                            <p class="text-[11px] text-slate-400">开启后直接从浏览器向您配置的 LLM 发起 OCR 请求</p>
                         </div>
                         <label class="relative inline-flex items-center cursor-pointer">
                             <input type="checkbox" id="local-proxy-enable" class="sr-only peer">
-                            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-500"></div>
+                            <div class="w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-rose-600"></div>
                         </label>
                     </div>
 
-                    <!-- Input Fields Grid -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                        <!-- Protocol Select -->
-                        <div class="space-y-1.5">
-                            <label for="local-proxy-protocol" class="text-xs font-bold text-slate-700 flex items-center space-x-1">
-                                <span>接口协议类型</span>
-                                <span class="group relative cursor-pointer text-slate-400 hover:text-slate-600">
-                                    <i data-lucide="info" class="w-3.5 h-3.5"></i>
-                                    <span class="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block w-48 bg-slate-800 text-white text-[10px] p-2 rounded shadow-lg z-20 leading-relaxed">
-                                        Gemini 协议需要 API Key；OpenAI 兼容协议通常为 /v1/chat/completions 形式。
-                                    </span>
-                                </span>
-                            </label>
-                            <select id="local-proxy-protocol" class="w-full text-sm rounded-xl border-slate-200 shadow-sm focus:border-red-500 focus:ring-red-500 bg-white">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="space-y-1">
+                            <label for="local-proxy-protocol" class="text-[11px] font-bold text-slate-600">接口协议</label>
+                            <select id="local-proxy-protocol" class="w-full text-xs rounded-xl border border-slate-200 p-2 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 bg-white font-medium">
                                 <option value="gemini">Google Gemini 协议</option>
                                 <option value="openai">OpenAI / Chat 兼容协议</option>
                             </select>
                         </div>
-
-                        <!-- Target Model -->
-                        <div class="space-y-1.5">
-                            <label for="local-proxy-model" class="text-xs font-bold text-slate-700">目标 API 模型 (Model)</label>
-                            <input type="text" id="local-proxy-model" placeholder="例如 gemini-2.5-flash 或 gpt-4o-mini" class="w-full text-sm rounded-xl border-slate-200 shadow-sm focus:border-red-500 focus:ring-red-500">
+                        <div class="space-y-1">
+                            <label for="local-proxy-model" class="text-[11px] font-bold text-slate-600">模型名称 (Model)</label>
+                            <input type="text" id="local-proxy-model" placeholder="例如 gemini-2.5-flash 或 gpt-4o-mini" class="w-full text-xs rounded-xl border border-slate-200 p-2 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 font-mono">
                         </div>
-
-                        <!-- API Base Path -->
-                        <div class="space-y-1.5 md:col-span-2">
-                            <label for="local-proxy-base" class="text-xs font-bold text-slate-700">API 接口基础路径 (Base URL)</label>
-                            <input type="text" id="local-proxy-base" placeholder="例如 https://generativelanguage.googleapis.com 或 https://api.openai.com" class="w-full text-sm rounded-xl border-slate-200 shadow-sm focus:border-red-500 focus:ring-red-500">
+                        <div class="space-y-1 md:col-span-2">
+                            <label for="local-proxy-base" class="text-[11px] font-bold text-slate-600">Base URL 接口地址</label>
+                            <input type="text" id="local-proxy-base" placeholder="例如 https://generativelanguage.googleapis.com" class="w-full text-xs rounded-xl border border-slate-200 p-2 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 font-mono">
                         </div>
-
-                        <!-- API Key -->
-                        <div class="space-y-1.5 md:col-span-2">
-                            <label for="local-proxy-key" class="text-xs font-bold text-slate-700">API 密钥 (API Key - 选填)</label>
-                            <input type="password" id="local-proxy-key" placeholder="您的 API 密钥（将安全地存储在您本地的浏览器 localStorage 中）" class="w-full text-sm rounded-xl border-slate-200 shadow-sm focus:border-red-500 focus:ring-red-500">
+                        <div class="space-y-1 md:col-span-2">
+                            <label for="local-proxy-key" class="text-[11px] font-bold text-slate-600">API Key (仅存本地浏览器)</label>
+                            <input type="password" id="local-proxy-key" placeholder="输入密钥..." class="w-full text-xs rounded-xl border border-slate-200 p-2 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 font-mono">
                         </div>
                     </div>
                 </div>
@@ -390,99 +481,93 @@
         </section>
     </main>
 
-    <footer class="bg-white border-t border-slate-200 py-6 mt-12">
-        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <p class="text-xs text-slate-400">A-Share Market Review App • Powered by Cloudflare D1 & Hono</p>
+    <!-- Footer -->
+    <footer class="border-t border-slate-200/80 py-6 mt-12 bg-white/50">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <p class="text-xs text-slate-400 font-mono">A-Share Market Review App • High Precision Quant Platform</p>
         </div>
     </footer>
 
-    <!-- ==================== MOBILE NAVIGATION BAR (NEW) ==================== -->
-    <nav class="flex md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200 py-1.5 px-4 justify-around items-center z-50 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]" aria-label="Mobile Navigation">
-        <button data-tab="search" class="flex flex-col items-center space-y-0.5 text-slate-600 hover:text-red-500 transition py-1 px-3 rounded-lg text-red-500 font-bold">
-            <i data-lucide="search" class="w-5 h-5"></i>
-            <span class="text-[10px] font-bold">个股</span>
+    <!-- Mobile Bottom Navigation Bar (Glassmorphism & Notch Safe) -->
+    <nav class="flex md:hidden fixed bottom-0 left-0 right-0 glass-nav pb-safe py-2 px-3 justify-around items-center z-50 shadow-[0_-4px_16px_rgba(0,0,0,0.04)]" aria-label="Mobile Navigation">
+        <button data-tab="search" class="flex flex-col items-center space-y-0.5 text-rose-600 font-bold transition py-1 px-3 rounded-xl">
+            <i data-lucide="search" class="w-4 h-4"></i>
+            <span class="text-[10px]">个股</span>
         </button>
-        <button data-tab="review" class="flex flex-col items-center space-y-0.5 text-slate-600 hover:text-red-500 transition py-1 px-3 rounded-lg">
-            <i data-lucide="calendar" class="w-5 h-5"></i>
-            <span class="text-[10px] font-bold">复盘</span>
+        <button data-tab="review" class="flex flex-col items-center space-y-0.5 text-slate-500 hover:text-slate-900 transition py-1 px-3 rounded-xl">
+            <i data-lucide="calendar" class="w-4 h-4"></i>
+            <span class="text-[10px]">复盘</span>
         </button>
-        <button data-tab="active" class="flex flex-col items-center space-y-0.5 text-slate-600 hover:text-red-500 transition py-1 px-3 rounded-lg">
-            <i data-lucide="award" class="w-5 h-5"></i>
-            <span class="text-[10px] font-bold">活跃</span>
+        <button data-tab="active" class="flex flex-col items-center space-y-0.5 text-slate-500 hover:text-slate-900 transition py-1 px-3 rounded-xl">
+            <i data-lucide="flame" class="w-4 h-4"></i>
+            <span class="text-[10px]">活跃</span>
         </button>
-        <button data-tab="upload" class="flex flex-col items-center space-y-0.5 text-slate-600 hover:text-red-500 transition py-1 px-3 rounded-lg">
-            <i data-lucide="cloud-upload" class="w-5 h-5"></i>
-            <span class="text-[10px] font-bold">上传</span>
+        <button data-tab="upload" class="flex flex-col items-center space-y-0.5 text-slate-500 hover:text-slate-900 transition py-1 px-3 rounded-xl">
+            <i data-lucide="cloud-upload" class="w-4 h-4"></i>
+            <span class="text-[10px]">上传</span>
         </button>
     </nav>
 
-    <!-- ==================== IMAGE PREVIEW MODAL ==================== -->
-    <div id="preview-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md transition-opacity duration-300 opacity-0">
-        <div class="relative max-w-4xl w-full max-h-[90vh] bg-white rounded-2xl overflow-hidden shadow-2xl flex flex-col transform scale-95 transition-transform duration-300">
-            <!-- Modal Header -->
-            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+    <!-- Modal: Image Preview -->
+    <div id="preview-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-md transition-opacity duration-200 opacity-0">
+        <div class="relative max-w-4xl w-full max-h-[90vh] bg-white rounded-2xl overflow-hidden shadow-2xl flex flex-col transform scale-95 transition-transform duration-200 border border-slate-200">
+            <div class="px-5 py-3.5 border-b border-slate-100 flex justify-between items-center bg-slate-50/70">
                 <div>
-                    <h3 id="modal-title" class="text-sm font-bold text-slate-900">图片预览</h3>
-                    <p id="modal-subtitle" class="text-xxs text-slate-400 mt-0.5">支持高清晰度原图展示</p>
+                    <h3 id="modal-title" class="text-xs font-bold text-slate-900">图片预览</h3>
+                    <p id="modal-subtitle" class="text-[11px] text-slate-400 mt-0.5">高清晰度原图</p>
                 </div>
-                <button id="modal-close-btn" class="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition">
-                    <i data-lucide="x" class="w-5 h-5"></i>
+                <button id="modal-close-btn" class="p-1 hover:bg-slate-200/60 rounded-lg text-slate-400 hover:text-slate-600 transition">
+                    <i data-lucide="x" class="w-4 h-4"></i>
                 </button>
             </div>
-            <!-- Modal Content (Zoomable Image) -->
-            <div class="flex-grow overflow-auto p-6 bg-slate-50 flex justify-center items-center min-h-[300px]">
-                <div class="relative group overflow-hidden max-w-full max-h-[60vh] rounded-lg shadow-sm border border-slate-200 bg-white flex items-center justify-center">
-                    <img id="modal-image" src="" alt="预览图" class="max-w-full max-h-[60vh] object-contain transition-transform duration-200 origin-center" />
+            <div class="flex-grow overflow-auto p-4 bg-slate-100/50 flex justify-center items-center min-h-[260px]">
+                <div class="relative max-w-full max-h-[60vh] rounded-lg shadow-sm border border-slate-200 bg-white flex items-center justify-center overflow-hidden">
+                    <img id="modal-image" src="" alt="预览图" class="max-w-full max-h-[60vh] object-contain transition-transform duration-150 origin-center" />
                 </div>
             </div>
-            <!-- Modal Footer / Controls -->
-            <div class="px-6 py-3 border-t border-slate-100 bg-slate-50/50 flex justify-between items-center">
-                <span class="text-xxs text-slate-400">点击按钮或使用滑块进行图片细节缩放</span>
-                <div class="flex items-center space-x-2">
-                    <button id="modal-zoom-out-btn" class="p-1.5 border border-slate-200 hover:bg-slate-100 rounded-lg text-slate-600 transition">
-                        <i data-lucide="zoom-out" class="w-4 h-4"></i>
+            <div class="px-5 py-2.5 border-t border-slate-100 bg-white flex justify-between items-center">
+                <span class="text-[11px] text-slate-400">缩放控制</span>
+                <div class="flex items-center space-x-1.5">
+                    <button id="modal-zoom-out-btn" class="p-1 border border-slate-200 hover:bg-slate-50 rounded-lg text-slate-600 transition">
+                        <i data-lucide="zoom-out" class="w-3.5 h-3.5"></i>
                     </button>
-                    <button id="modal-zoom-reset-btn" class="px-2.5 py-1 border border-slate-200 hover:bg-slate-100 rounded-lg text-xxs font-semibold text-slate-600 transition">
+                    <button id="modal-zoom-reset-btn" class="px-2 py-0.5 border border-slate-200 hover:bg-slate-50 rounded-lg text-[11px] font-mono font-semibold text-slate-600 transition">
                         100%
                     </button>
-                    <button id="modal-zoom-in-btn" class="p-1.5 border border-slate-200 hover:bg-slate-100 rounded-lg text-slate-600 transition">
-                        <i data-lucide="zoom-in" class="w-4 h-4"></i>
+                    <button id="modal-zoom-in-btn" class="p-1 border border-slate-200 hover:bg-slate-50 rounded-lg text-slate-600 transition">
+                        <i data-lucide="zoom-in" class="w-3.5 h-3.5"></i>
                     </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- ==================== MARKDOWN EDIT MODAL (NEW) ==================== -->
-    <div id="edit-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <!-- Modal: Markdown Edit -->
+    <div id="edit-modal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-md z-50 flex items-center justify-center hidden p-3 sm:p-4">
         <div class="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-2xl w-full flex flex-col max-h-[85vh] overflow-hidden">
-            <!-- Header -->
-            <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+            <div class="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
                 <div>
-                    <h3 class="text-base font-extrabold text-slate-900">修正复盘数据</h3>
-                    <p id="edit-modal-date" class="text-xs text-slate-400 mt-0.5">正在修改 -- 的复盘 Markdown</p>
+                    <h3 class="text-xs font-bold text-slate-900">修正复盘 Markdown 数据</h3>
+                    <p id="edit-modal-date" class="text-[11px] text-slate-400 font-mono mt-0.5">正在修改 --</p>
                 </div>
-                <button id="edit-modal-close" class="p-1.5 hover:bg-slate-200 text-slate-400 hover:text-slate-600 rounded-lg transition"><i data-lucide="x" class="w-5 h-5"></i></button>
+                <button id="edit-modal-close" class="p-1 hover:bg-slate-200/60 text-slate-400 hover:text-slate-600 rounded-lg transition"><i data-lucide="x" class="w-4 h-4"></i></button>
             </div>
-
-            <!-- Textarea Editor -->
-            <div class="p-6 flex-grow overflow-y-auto">
-                <label for="edit-markdown-textarea" class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">原始 Markdown 文本</label>
-                <textarea id="edit-markdown-textarea" class="w-full h-80 p-4 border border-slate-300 rounded-xl font-mono text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500" placeholder="正在加载原始 Markdown..."></textarea>
-                <p class="text-[10px] text-slate-400 mt-2 leading-relaxed">提示：您可以手动添加板块（格式如 `### 板块名称`）、修改个股数据行（格式如 `|首板|600123|股票名称|时间|概念原因|`）。点击下方保存后，系统将自动重新校验入库并同步刷新复盘页面。</p>
+            <div class="p-5 flex-grow overflow-y-auto space-y-2">
+                <label for="edit-markdown-textarea" class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider">原始 Markdown 文本</label>
+                <textarea id="edit-markdown-textarea" class="w-full h-80 p-3.5 border border-slate-200 rounded-xl font-mono text-xs text-slate-800 bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500" placeholder="正在加载原始 Markdown..."></textarea>
+                <p class="text-[11px] text-slate-400 leading-relaxed">提示：支持修改板块格式（`### 板块名称`）和个股行（`|首板|600123|股票名称|时间|概念原因|`）。保存后将自动重新校验入库。</p>
             </div>
-
-            <!-- Footer -->
-            <div class="px-6 py-4 border-t border-slate-100 bg-slate-50/50 flex justify-end space-x-3">
-                <button id="edit-modal-cancel-btn" class="px-4 py-2 border border-slate-200 hover:bg-slate-100 text-slate-700 rounded-lg text-xs font-bold transition">取消</button>
-                <button id="edit-modal-save-btn" class="px-5 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-xs font-bold shadow-sm transition flex items-center space-x-1.5">
-                    <i data-lucide="check" class="w-4 h-4"></i>
+            <div class="px-5 py-3 border-t border-slate-100 bg-slate-50/70 flex justify-end space-x-2">
+                <button id="edit-modal-cancel-btn" class="px-3 py-1.5 border border-slate-200 hover:bg-white text-slate-600 rounded-lg text-xs font-semibold transition">取消</button>
+                <button id="edit-modal-save-btn" class="px-4 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold shadow-sm transition flex items-center space-x-1.5">
+                    <i data-lucide="check" class="w-3.5 h-3.5"></i>
                     <span>确认修改并入库</span>
                 </button>
             </div>
         </div>
     </div>
 
+    <!-- Scripts -->
     <script type="module" src="/js/app.js"></script>
 </body>
 </html>

@@ -81,29 +81,29 @@ class App {
 
             if (btnTab === tab) {
                 if (isDesktop) {
-                    // 桌面端激活样式
-                    btn.className = "px-4 py-2 text-sm font-semibold rounded-lg flex items-center space-x-2 transition duration-150 ease-in-out bg-white text-slate-900 shadow-sm";
+                    // 桌面端激活样式（现代 Segmented Control 白底微边框微投影）
+                    btn.className = "px-4 py-1.5 text-xs font-semibold rounded-lg flex items-center space-x-2 transition-all duration-150 bg-white text-slate-900 shadow-sm border border-slate-200/60";
 
                     const icon = btn.querySelector('i, svg');
                     if (icon) {
-                        icon.setAttribute('class', 'w-4 h-4 text-red-500');
+                        icon.setAttribute('class', 'w-3.5 h-3.5 text-rose-600');
                     }
                 } else {
                     // 移动端激活样式
-                    btn.className = "flex flex-col items-center space-y-0.5 text-red-500 font-bold transition py-1 px-3 rounded-lg";
+                    btn.className = "flex flex-col items-center space-y-0.5 text-rose-600 font-bold transition py-1 px-3 rounded-xl";
                 }
             } else {
                 if (isDesktop) {
                     // 桌面端非激活样式
-                    btn.className = "px-4 py-2 text-sm font-semibold rounded-lg flex items-center space-x-2 transition duration-150 ease-in-out text-slate-600 hover:text-slate-900";
+                    btn.className = "px-4 py-1.5 text-xs font-semibold rounded-lg flex items-center space-x-2 transition-all duration-150 text-slate-600 hover:text-slate-900";
 
                     const icon = btn.querySelector('i, svg');
                     if (icon) {
-                        icon.setAttribute('class', 'w-4 h-4 text-slate-400');
+                        icon.setAttribute('class', 'w-3.5 h-3.5 text-slate-400');
                     }
                 } else {
                     // 移动端非激活样式
-                    btn.className = "flex flex-col items-center space-y-0.5 text-slate-500 transition py-1 px-3 rounded-lg";
+                    btn.className = "flex flex-col items-center space-y-0.5 text-slate-500 hover:text-slate-900 transition py-1 px-3 rounded-xl";
                 }
             }
         });
@@ -118,15 +118,15 @@ class App {
     }
 
     getStatusBadgeStyle(status) {
-        if (!status) return 'bg-slate-100 text-slate-600';
+        if (!status) return 'bg-slate-100 text-slate-600 border border-slate-200/80';
         const s = status.trim();
-        if (s.includes('首板')) return 'bg-blue-50 text-blue-700 border border-blue-100';
-        if (s.includes('二')) return 'bg-rose-50 text-rose-700 border border-rose-100';
+        if (s.includes('首板')) return 'badge-limit-first';
+        if (s.includes('二')) return 'badge-limit-two';
         if (s.includes('三') || s.includes('四') || s.includes('五') || s.includes('六') || s.includes('七') || s.includes('高度板')) {
-            return 'bg-red-100 text-red-800 border border-red-200 font-bold';
+            return 'badge-limit-high';
         }
-        if (s.includes('T') || s.includes('一字')) return 'bg-amber-50 text-amber-700 border border-amber-100';
-        return 'bg-slate-50 text-slate-600 border border-slate-100';
+        if (s.includes('T') || s.includes('一字')) return 'badge-limit-flat';
+        return 'bg-slate-100 text-slate-700 border border-slate-200/80';
     }
 
     deepLinkStock(stockCode, stockName) {
@@ -150,24 +150,17 @@ class App {
         this.searchTab.performSearch();
     }
 
-    deepLinkDate(dateStr) {
+    deepLinkDate(date) {
         this.switchTab('review');
-        document.getElementById('date-select').value = dateStr;
-        this.reviewTab.loadDailyDetails(dateStr);
+        const select = document.getElementById('date-select');
+        select.value = date;
+        this.reviewTab.loadDailyDetails(date);
     }
 
     initGlobalEventListeners() {
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' || e.key === 'Esc') {
-                // 1. 判断并关闭 UploadTab 下的暂存图片预览
-                if (this.uploadTab && this.uploadTab.previewModal && !this.uploadTab.previewModal.classList.contains('hidden')) {
-                    this.uploadTab.closePreviewModal();
-                }
-                // 2. 判断并关闭 ReviewTab 下的历史数据纠错弹窗
-                else if (this.reviewTab && this.reviewTab.editModal && !this.reviewTab.editModal.classList.contains('hidden')) {
-                    this.reviewTab.closeEditModal();
-                }
-            }
+        // Global error boundary & unhandled rejection handler
+        window.addEventListener('unhandledrejection', (event) => {
+            console.error('Unhandled promise rejection:', event.reason);
         });
     }
 }

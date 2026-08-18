@@ -45,11 +45,11 @@ export class SearchTab {
         if (this.sectorMatchMode === mode) return;
         this.sectorMatchMode = mode;
         if (mode === 'exact') {
-            this.btnExact.className = "px-2 py-0.5 text-xxs font-bold rounded-md transition duration-150 bg-white text-slate-855 shadow-sm";
-            this.btnFuzzy.className = "px-2 py-0.5 text-xxs font-bold rounded-md transition duration-150 text-slate-500 hover:text-slate-800";
+            this.btnExact.className = "px-2 py-0.5 text-[11px] font-bold rounded-md transition bg-white text-slate-800 shadow-xs";
+            this.btnFuzzy.className = "px-2 py-0.5 text-[11px] font-medium rounded-md transition text-slate-500 hover:text-slate-800";
         } else {
-            this.btnFuzzy.className = "px-2 py-0.5 text-xxs font-bold rounded-md transition duration-150 bg-white text-slate-855 shadow-sm";
-            this.btnExact.className = "px-2 py-0.5 text-xxs font-bold rounded-md transition duration-150 text-slate-500 hover:text-slate-800";
+            this.btnFuzzy.className = "px-2 py-0.5 text-[11px] font-bold rounded-md transition bg-white text-slate-800 shadow-xs";
+            this.btnExact.className = "px-2 py-0.5 text-[11px] font-medium rounded-md transition text-slate-500 hover:text-slate-800";
         }
         if (this.activeSectors.length > 0) this.performSearch();
     }
@@ -75,10 +75,10 @@ export class SearchTab {
         this.sectorTagsContainer.innerHTML = '';
         this.activeSectors.forEach(name => {
             const span = document.createElement('span');
-            span.className = "inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700 border border-red-200 shadow-sm";
+            span.className = "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200/80 shadow-xs";
             span.innerHTML = `
                 <span>${name}</span>
-                <button class="ml-1.5 text-red-500 hover:text-red-900 focus:outline-none"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
+                <button class="ml-1.5 text-rose-500 hover:text-rose-900 focus:outline-none"><i data-lucide="x" class="w-3 h-3"></i></button>
             `;
             span.querySelector('button').addEventListener('click', () => this.removeSectorTag(name));
             this.sectorTagsContainer.appendChild(span);
@@ -107,10 +107,10 @@ export class SearchTab {
         this.reasonTagsContainer.innerHTML = '';
         this.activeReasons.forEach(name => {
             const span = document.createElement('span');
-            span.className = "inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 shadow-sm";
+            span.className = "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200/80 shadow-xs";
             span.innerHTML = `
                 <span>${name}</span>
-                <button class="ml-1.5 text-indigo-500 hover:text-indigo-900 focus:outline-none"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
+                <button class="ml-1.5 text-indigo-500 hover:text-indigo-900 focus:outline-none"><i data-lucide="x" class="w-3 h-3"></i></button>
             `;
             span.querySelector('button').addEventListener('click', () => this.removeReasonTag(name));
             this.reasonTagsContainer.appendChild(span);
@@ -172,37 +172,37 @@ export class SearchTab {
                     const latest = stock.history[0];
                     const shouldExpand = (stockList.length === 1) || (q && /^\d{6}$/.test(q) && stock.code === q);
                     const card = document.createElement('div');
-                    card.className = "bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden transition-all duration-150";
+                    card.className = "financial-card rounded-2xl overflow-hidden transition-all duration-200";
 
                     let historyRows = '';
                     stock.history.forEach(item => {
                         const statusStyle = this.app.getStatusBadgeStyle(item.status);
                         historyRows += `
-                            <tr class="flex flex-col md:table-row p-4 md:p-3 mb-3 md:mb-0 border border-slate-200 md:border-0 rounded-xl md:rounded-none bg-white md:bg-transparent shadow-sm md:shadow-none hover:bg-slate-50/50 transition-colors">
-                                <td class="flex md:table-cell justify-between items-center px-0 md:px-6 py-1.5 md:py-3 border-b md:border-b-0 border-slate-100 pb-2 md:pb-3 text-sm">
-                                    <span class="text-slate-700 font-semibold font-mono hover:text-red-500 cursor-pointer text-sm" date-link="${item.date}">${item.date}</span>
+                            <tr class="flex flex-col md:table-row p-4 md:p-0 mb-3 md:mb-0 border border-slate-200 md:border-0 rounded-2xl md:rounded-none bg-white md:bg-transparent shadow-xs md:shadow-none hover:bg-slate-50/60 transition-colors">
+                                <td class="flex md:table-cell justify-between items-center px-0 md:px-5 py-1.5 md:py-3 border-b md:border-b-0 border-slate-100 pb-2 md:pb-3 text-xs">
+                                    <span class="text-slate-900 font-semibold font-mono hover:text-rose-600 cursor-pointer text-xs" date-link="${item.date}">${item.date}</span>
                                     <span class="md:hidden text-xs text-slate-400 font-mono flex items-center gap-1">
                                         <i data-lucide="clock" class="w-3.5 h-3.5"></i>
                                         <span>${item.time || '--:--'}</span>
                                     </span>
                                 </td>
-                                <td class="px-0 md:px-6 py-1 md:py-3 text-sm whitespace-nowrap flex items-center space-x-2 md:table-cell">
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-semibold ${statusStyle}">
+                                <td class="px-0 md:px-5 py-1.5 md:py-3 text-xs whitespace-nowrap flex items-center space-x-2 md:table-cell">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${statusStyle}">
                                         ${item.status || '涨停'}
                                     </span>
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100 hover:text-red-500 cursor-pointer md:hidden" sector-link="${item.sector_name || '其他概念'}">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold badge-sector-pill cursor-pointer md:hidden" sector-link="${item.sector_name || '其他概念'}">
                                         ${item.sector_name || '其他概念'}
                                     </span>
                                 </td>
-                                <td class="hidden md:table-cell px-6 py-3 text-sm text-slate-500 font-mono whitespace-nowrap">${item.time || '--:--'}</td>
-                                <td class="hidden md:table-cell px-6 py-3 text-sm whitespace-nowrap hover:text-red-500 cursor-pointer" sector-link="${item.sector_name || '其他概念'}">
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                                <td class="hidden md:table-cell px-5 py-3 text-xs text-slate-500 font-mono whitespace-nowrap">${item.time || '--:--'}</td>
+                                <td class="hidden md:table-cell px-5 py-3 text-xs whitespace-nowrap hover:text-rose-600 cursor-pointer" sector-link="${item.sector_name || '其他概念'}">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold badge-sector-pill">
                                         ${item.sector_name || '其他概念'}
                                     </span>
                                 </td>
-                                <td class="block md:table-cell px-0 md:px-6 py-1.5 md:py-3 text-sm text-slate-600 bg-slate-50 md:bg-transparent p-2.5 md:p-0 rounded-lg md:max-w-sm md:truncate" title="${item.concept_reason || ''}">
+                                <td class="block md:table-cell px-0 md:px-5 py-1.5 md:py-3 text-xs text-slate-600 bg-slate-50/80 md:bg-transparent p-3 md:p-0 rounded-xl md:max-w-sm md:truncate" title="${item.concept_reason || ''}">
                                     <div class="md:hidden text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">涨停动因 & 概念</div>
-                                    <div class="leading-relaxed text-xs md:text-sm">${item.concept_reason || '--'}</div>
+                                    <div class="leading-relaxed text-xs">${item.concept_reason || '--'}</div>
                                 </td>
                             </tr>
                         `;
@@ -212,36 +212,36 @@ export class SearchTab {
                     card.innerHTML = `
                     <button class="w-full flex items-center justify-between p-5 hover:bg-slate-50/50 transition text-left" toggle-stock-code="${stock.code}">
                         <div class="flex items-center space-x-3.5">
-                            <div class="p-3 bg-red-50 rounded-xl text-red-500 shrink-0">
-                                <i data-lucide="trending-up" class="w-5 h-5"></i>
+                            <div class="p-2.5 bg-rose-50 rounded-xl text-rose-600 border border-rose-100/60 shrink-0">
+                                <i data-lucide="trending-up" class="w-4 h-4"></i>
                             </div>
                             <div>
                                 <h3 class="text-sm font-bold text-slate-900 flex items-baseline space-x-2">
                                     <span>${stock.name}</span>
                                     <span class="text-xs text-slate-400 font-mono font-medium">${stock.code}</span>
                                 </h3>
-                                <p class="text-xxs text-slate-400 mt-0.5">历史涨停 ${stock.history.length} 次 | 最近一次: ${latest.date}</p>
+                                <p class="text-[11px] text-slate-400 font-mono mt-0.5">历史涨停 ${stock.history.length} 次 | 最近一次: ${latest.date}</p>
                             </div>
                         </div>
-                        <div class="flex items-center space-x-4">
-                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${statusStyle}">
+                        <div class="flex items-center space-x-3">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${statusStyle}">
                                 ${latest.status || '涨停'}
                             </span>
-                            <div class="p-1 text-slate-400"><i data-lucide="chevron-down" class="w-5 h-5 transition-transform duration-150 ${shouldExpand ? 'rotate-180' : ''}"></i></div>
+                            <div class="p-1 text-slate-400"><i data-lucide="chevron-down" class="w-4 h-4 transition-transform duration-200 ${shouldExpand ? 'rotate-180' : ''}"></i></div>
                         </div>
                     </button>
-                    <div class="stock-collapse ${shouldExpand ? '' : 'hidden'} border-t border-slate-100 overflow-x-auto bg-slate-50/30">
+                    <div class="stock-collapse ${shouldExpand ? '' : 'hidden'} border-t border-slate-100 overflow-x-auto bg-slate-50/30 p-2 md:p-0">
                             <table class="min-w-full divide-y divide-slate-100">
-                                <thead class="bg-slate-50/50 hidden md:table-header-group">
+                                <thead class="bg-slate-50/80 hidden md:table-header-group">
                                     <tr>
-                                        <th scope="col" class="px-6 py-2.5 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">日期</th>
-                                        <th scope="col" class="px-6 py-2.5 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">板式/状态</th>
-                                        <th scope="col" class="px-6 py-2.5 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">涨停时间</th>
-                                        <th scope="col" class="px-6 py-2.5 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">所属概念板块</th>
-                                        <th scope="col" class="px-6 py-2.5 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">概念/原因</th>
+                                        <th scope="col" class="px-5 py-2.5 text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider">日期</th>
+                                        <th scope="col" class="px-5 py-2.5 text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider">板式/状态</th>
+                                        <th scope="col" class="px-5 py-2.5 text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider">涨停时间</th>
+                                        <th scope="col" class="px-5 py-2.5 text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider">所属概念板块</th>
+                                        <th scope="col" class="px-5 py-2.5 text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider">概念/原因</th>
                                     </tr>
                                 </thead>
-                                <tbody class="divide-y divide-slate-100 bg-white">${historyRows}</tbody>
+                                <tbody class="divide-y divide-slate-100 bg-white md:bg-transparent">${historyRows}</tbody>
                             </table>
                         </div>
                     `;

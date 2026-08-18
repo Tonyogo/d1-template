@@ -71,7 +71,7 @@ export class ReviewTab {
         this.currentLoadedDate = date;
         this.loader.classList.remove('hidden');
         this.accordionContainer.innerHTML = '';
-        this.editBtn.classList.add('hidden'); // 加载中先隐藏按钮
+        this.editBtn.classList.add('hidden');
 
         try {
             this.reviewImg.src = '/api/image?date=' + date;
@@ -88,7 +88,7 @@ export class ReviewTab {
             const data = await api.getDailyDetails(date);
 
             const summary = data.summary;
-            this.statCount.innerHTML = `${summary.stock_count || '--'} <span class="text-xs font-medium text-slate-400">只</span>`;
+            this.statCount.innerHTML = `${summary.stock_count || '--'} <span class="text-[11px] font-sans font-medium text-slate-400">只</span>`;
             this.statUpgrade.textContent = summary.upgrade_rate !== null ? `${summary.upgrade_rate}%` : '--%';
             this.statBroken.textContent = summary.limit_broken_rate !== null ? `${summary.limit_broken_rate}%` : '--%';
             this.statBidding.textContent = summary.bidding_increase_rate !== null ? `${summary.bidding_increase_rate}%` : '--%';
@@ -99,7 +99,7 @@ export class ReviewTab {
             this.editBtn.classList.remove('hidden');
         } catch (err) {
             console.error(err);
-            this.accordionContainer.innerHTML = '<div class="text-center py-10 text-slate-500">无法加载此日期的详细复盘数据</div>';
+            this.accordionContainer.innerHTML = '<div class="financial-card rounded-2xl p-10 text-center text-xs text-slate-500 font-medium">无法加载此日期的详细复盘数据</div>';
         } finally {
             this.loader.classList.add('hidden');
         }
@@ -108,7 +108,7 @@ export class ReviewTab {
     renderSectorsAccordion(sectors) {
         this.accordionContainer.innerHTML = '';
         if (!sectors || sectors.length === 0) {
-            this.accordionContainer.innerHTML = '<div class="text-center py-10 text-slate-400">当日暂未捕获板块分类</div>';
+            this.accordionContainer.innerHTML = '<div class="financial-card rounded-2xl p-10 text-center text-xs text-slate-400 font-medium">当日暂未捕获板块分类</div>';
             return;
         }
 
@@ -116,53 +116,59 @@ export class ReviewTab {
             if (sector.stocks.length === 0) return;
 
             const item = document.createElement('div');
-            item.className = "bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden transition-all duration-150";
+            item.className = "financial-card rounded-2xl overflow-hidden transition-all duration-200";
 
             let stockRows = '';
             sector.stocks.forEach(stock => {
                 const statusStyle = this.app.getStatusBadgeStyle(stock.status);
                 stockRows += `
-                    <tr class="flex flex-col md:table-row hover:bg-slate-50/50 transition-colors border-b border-slate-100 last:border-b-0 md:border-b-0">
-                        <td class="px-4 pt-3 pb-1 md:px-6 md:py-3 text-sm whitespace-nowrap flex justify-between items-center md:table-cell">
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-semibold ${statusStyle}">
+                    <tr class="flex flex-col md:table-row hover:bg-slate-50/60 transition-colors border-b border-slate-100 last:border-b-0 md:border-b-0 p-4 md:p-0">
+                        <td class="pb-2 md:pb-0 md:px-5 md:py-3 text-xs whitespace-nowrap flex justify-between items-center md:table-cell">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${statusStyle}">
                                 ${stock.status || '涨停'}
                             </span>
-                            <span class="text-sm text-slate-500 font-mono md:hidden">${stock.time || '--:--'}</span>
+                            <span class="text-xs text-slate-400 font-mono md:hidden flex items-center gap-1">
+                                <i data-lucide="clock" class="w-3.5 h-3.5"></i>
+                                <span>${stock.time || '--:--'}</span>
+                            </span>
                         </td>
-                        <td class="hidden md:table-cell px-6 py-3 text-sm text-slate-500 font-mono whitespace-nowrap">${stock.code}</td>
-                        <td class="px-4 py-1 md:px-6 md:py-3 text-sm text-slate-900 whitespace-nowrap hover:text-red-500 cursor-pointer flex items-baseline space-x-2 md:table-cell" stock-link="${stock.code}" stock-name="${stock.name}">
-                            <span class="text-base font-bold md:text-sm md:font-bold">${stock.name}</span>
-                            <span class="text-xs text-slate-400 font-mono font-medium md:hidden">${stock.code}</span>
+                        <td class="hidden md:table-cell px-5 py-3 text-xs text-slate-500 font-mono whitespace-nowrap">${stock.code}</td>
+                        <td class="py-1 md:px-5 md:py-3 text-xs text-slate-900 whitespace-nowrap hover:text-rose-600 cursor-pointer flex items-baseline space-x-2 md:table-cell font-semibold" stock-link="${stock.code}" stock-name="${stock.name}">
+                            <span class="text-sm md:text-xs font-bold text-slate-900 hover:text-rose-600 transition-colors">${stock.name}</span>
+                            <span class="text-[11px] text-slate-400 font-mono font-medium md:hidden">${stock.code}</span>
                         </td>
-                        <td class="hidden md:table-cell px-6 py-3 text-sm text-slate-500 font-mono whitespace-nowrap">${stock.time || '--:--'}</td>
-                        <td class="px-4 py-2.5 text-sm text-slate-600 bg-slate-50 rounded-lg mx-4 mb-3 md:mx-0 md:mb-0 md:bg-transparent md:px-6 md:py-3 md:table-cell">${stock.concept_reason || '--'}</td>
+                        <td class="hidden md:table-cell px-5 py-3 text-xs text-slate-500 font-mono whitespace-nowrap">${stock.time || '--:--'}</td>
+                        <td class="pt-2 md:pt-0 md:px-5 md:py-3 text-xs text-slate-600 bg-slate-50/80 rounded-xl p-3 md:p-0 md:bg-transparent md:table-cell">
+                            <div class="md:hidden text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">动因 & 概念</div>
+                            <div class="leading-relaxed">${stock.concept_reason || '--'}</div>
+                        </td>
                     </tr>
                 `;
             });
 
             item.innerHTML = `
-                <button class="w-full px-6 py-4 flex items-center justify-between bg-slate-50/50 hover:bg-slate-50 transition-colors text-left border-b border-slate-100 font-bold">
+                <button class="w-full px-5 py-4 flex items-center justify-between bg-white hover:bg-slate-50/50 transition-colors text-left border-b border-slate-100">
                     <div class="flex items-center space-x-3 truncate">
-                        <div class="p-1.5 bg-red-50 text-red-500 rounded-lg"><i data-lucide="hash" class="w-4 h-4"></i></div>
+                        <div class="p-2 bg-rose-50 text-rose-600 rounded-xl border border-rose-100/60"><i data-lucide="hash" class="w-4 h-4"></i></div>
                         <div class="truncate">
-                            <span class="text-base font-extrabold text-slate-900">${sector.name}</span>
-                            ${sector.description ? `<span class="text-xs text-slate-400 ml-3 font-medium truncate hidden sm:inline-block">${sector.description}</span>` : ''}
+                            <span class="text-sm font-bold text-slate-900">${sector.name}</span>
+                            ${sector.description ? `<span class="text-xs text-slate-400 ml-2.5 font-medium truncate hidden sm:inline-block">${sector.description}</span>` : ''}
                         </div>
                     </div>
-                    <div class="flex items-center space-x-4 shrink-0">
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-200 text-slate-800">${sector.stocks.length} 只个股</span>
-                        <div class="p-1 text-slate-400"><i data-lucide="chevron-down" class="w-5 h-5 transition-transform duration-150"></i></div>
+                    <div class="flex items-center space-x-3 shrink-0">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-mono font-semibold bg-slate-100 text-slate-700 border border-slate-200/60">${sector.stocks.length} 只个股</span>
+                        <div class="p-1 text-slate-400"><i data-lucide="chevron-down" class="w-4 h-4 transition-transform duration-200"></i></div>
                     </div>
                 </button>
-                <div class="sector-collapse hidden border-t border-slate-100 overflow-x-auto">
+                <div class="sector-collapse hidden border-t border-slate-100 overflow-x-auto bg-slate-50/20">
                     <table class="min-w-full divide-y divide-slate-100">
-                        <thead class="bg-slate-50/50 hidden md:table-header-group">
+                        <thead class="bg-slate-50/80 hidden md:table-header-group">
                             <tr>
-                                <th scope="col" class="px-6 py-2.5 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">板式</th>
-                                <th scope="col" class="px-6 py-2.5 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">代码</th>
-                                <th scope="col" class="px-6 py-2.5 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">名称</th>
-                                <th scope="col" class="px-6 py-2.5 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">时间</th>
-                                <th scope="col" class="px-6 py-2.5 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">概念/原因</th>
+                                <th scope="col" class="px-5 py-2.5 text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider">板式</th>
+                                <th scope="col" class="px-5 py-2.5 text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider">代码</th>
+                                <th scope="col" class="px-5 py-2.5 text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider">名称</th>
+                                <th scope="col" class="px-5 py-2.5 text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider">时间</th>
+                                <th scope="col" class="px-5 py-2.5 text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider">概念/原因</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100 bg-white">${stockRows}</tbody>
