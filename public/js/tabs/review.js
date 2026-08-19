@@ -141,9 +141,7 @@ export class ReviewTab {
 
         // 计算当前月的第一天是星期几（0 为周日，1-6 为周一至周六）
         const firstDayObj = new Date(this.viewYear, this.viewMonth, 1);
-        let firstDayOfWeek = firstDayObj.getDay(); // 0(Sun) - 6(Sat)
-        // 转换为中国习惯（周一为 0，周日为 6）
-        let startOffset = (firstDayOfWeek + 6) % 7;
+        let startOffset = firstDayObj.getDay(); // 0(Sun) 为第一列，6(Sat) 为最后一列
 
         // 当前月总天数
         const totalDays = new Date(this.viewYear, this.viewMonth + 1, 0).getDate();
