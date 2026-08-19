@@ -83,6 +83,13 @@ export class UploadTab {
             }
         });
 
+        // 绑定全局 ESC 按键监听以快速关闭 Modal
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !this.previewModal.classList.contains('hidden')) {
+                this.closePreviewModal();
+            }
+        });
+
         // 初始化并同步并发选择与 LocalStorage 持久化记忆
         if (this.concurrencySelect) {
             const cachedLimit = localStorage.getItem('pending_concurrency_limit');

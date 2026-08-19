@@ -48,6 +48,13 @@ export class ReviewTab {
                 this.closeEditModal();
             }
         });
+
+        // 绑定全局 ESC 按键监听以快速关闭 Markdown 纠错 Modal
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !this.editModal.classList.contains('hidden')) {
+                this.closeEditModal();
+            }
+        });
     }
 
     toggleImage() {
