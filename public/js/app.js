@@ -41,23 +41,29 @@ class App {
         try {
             const summaries = await api.getDailySummaries();
             const select = document.getElementById('date-select');
-            select.innerHTML = '';
+            if (select) select.innerHTML = '';
 
             if (summaries.length === 0) {
-                select.innerHTML = '<option value="">暂无数据</option>';
+                if (select) select.innerHTML = '<option value="">暂无数据</option>';
+                const calendarSelectedText = document.getElementById('calendar-selected-text');
+                if (calendarSelectedText) calendarSelectedText.textContent = '暂无数据';
                 return;
             }
 
+            const dates = summaries.map(s => s.date);
+            this.reviewTab.setAvailableDates(dates);
+
             summaries.forEach((item, index) => {
-                const opt = document.createElement('option');
-                opt.value = item.date;
-                opt.textContent = item.date + (index === 0 ? ' (最新)' : '');
-                select.appendChild(opt);
+                if (select) {
+                    const opt = document.createElement('option');
+                    opt.value = item.date;
+                    opt.textContent = item.date + (index === 0 ? ' (最新)' : '');
+                    select.appendChild(opt);
+                }
             });
 
             const latest = summaries[0].date;
-            select.value = latest;
-            this.reviewTab.loadDailyDetails(latest);
+            this.reviewTab.selectDate(latest);
 
         } catch (err) {
             console.error(err);
@@ -152,9 +158,7 @@ class App {
 
     deepLinkDate(date) {
         this.switchTab('review');
-        const select = document.getElementById('date-select');
-        select.value = date;
-        this.reviewTab.loadDailyDetails(date);
+        this.reviewTab.selectDate(date);
     }
 
     initGlobalEventListeners() {

@@ -4,7 +4,12 @@ export class ReviewTab {
     constructor(app) {
         this.app = app;
         this.currentLoadedDate = null;
+        this.availableDates = []; // 保存所有有数据的日期字符串数组 ['2026-08-18', ...]
+        this.viewYear = new Date().getFullYear();
+        this.viewMonth = new Date().getMonth(); // 0-indexed (0 = 1月)
+
         this.initDOM();
+        this.initCalendarDOM();
         this.initEditModalDOM();
     }
 
@@ -26,9 +31,188 @@ export class ReviewTab {
         // 纠错按钮
         this.editBtn = document.getElementById('review-edit-btn');
 
-        this.select.addEventListener('change', (e) => this.loadDailyDetails(e.target.value));
+        if (this.select) {
+            this.select.addEventListener('change', (e) => this.selectDate(e.target.value));
+        }
         this.imageToggleBtn.addEventListener('click', () => this.toggleImage());
         this.editBtn.addEventListener('click', () => this.openEditModal());
+    }
+
+    initCalendarDOM() {
+        this.calendarTriggerBtn = document.getElementById('calendar-trigger-btn');
+        this.calendarSelectedText = document.getElementById('calendar-selected-text');
+        this.calendarChevron = document.getElementById('calendar-trigger-chevron');
+        this.calendarPopover = document.getElementById('calendar-popover');
+        this.calMonthTitle = document.getElementById('cal-month-title');
+        this.calPrevMonthBtn = document.getElementById('cal-prev-month-btn');
+        this.calNextMonthBtn = document.getElementById('cal-next-month-btn');
+        this.calDaysGrid = document.getElementById('cal-days-grid');
+        this.calLatestDateBtn = document.getElementById('cal-latest-date-btn');
+
+        // 触发日历显示/隐藏
+        this.calendarTriggerBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.toggleCalendarPopover();
+        });
+
+        // 阻止日历面板内部点击事件冒泡关闭
+        this.calendarPopover.addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+
+        // 切换月份
+        this.calPrevMonthBtn.addEventListener('click', () => {
+            this.viewMonth--;
+            if (this.viewMonth < 0) {
+                this.viewMonth = 11;
+                this.viewYear--;
+            }
+            this.renderCalendarGrid();
+        });
+
+        this.calNextMonthBtn.addEventListener('click', () => {
+            this.viewMonth++;
+            if (this.viewMonth > 11) {
+                this.viewMonth = 0;
+                this.viewYear++;
+            }
+            this.renderCalendarGrid();
+        });
+
+        // 快捷跳转最新交易日
+        this.calLatestDateBtn.addEventListener('click', () => {
+            if (this.availableDates.length > 0) {
+                const latest = this.availableDates[0];
+                this.selectDate(latest);
+                this.closeCalendarPopover();
+            }
+        });
+
+        // 点击页面其他位置自动关闭 Popover
+        document.addEventListener('click', () => {
+            this.closeCalendarPopover();
+        });
+
+        // ESC 快捷键关闭日历
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !this.calendarPopover.classList.contains('hidden')) {
+                this.closeCalendarPopover();
+            }
+        });
+    }
+
+    toggleCalendarPopover() {
+        const isHidden = this.calendarPopover.classList.contains('hidden');
+        if (isHidden) {
+            // 打开时定位年月到当前选中的日期（如果有）
+            if (this.currentLoadedDate) {
+                const parts = this.currentLoadedDate.split('-');
+                this.viewYear = parseInt(parts[0], 10);
+                this.viewMonth = parseInt(parts[1], 10) - 1;
+            }
+            this.renderCalendarGrid();
+            this.calendarPopover.classList.remove('hidden');
+            if (this.calendarChevron) this.calendarChevron.classList.add('rotate-180');
+        } else {
+            this.closeCalendarPopover();
+        }
+    }
+
+    closeCalendarPopover() {
+        if (!this.calendarPopover.classList.contains('hidden')) {
+            this.calendarPopover.classList.add('hidden');
+            if (this.calendarChevron) this.calendarChevron.classList.remove('rotate-180');
+        }
+    }
+
+    setAvailableDates(dates) {
+        this.availableDates = dates || [];
+        if (this.availableDates.length > 0) {
+            const latest = this.availableDates[0];
+            const parts = latest.split('-');
+            this.viewYear = parseInt(parts[0], 10);
+            this.viewMonth = parseInt(parts[1], 10) - 1;
+        }
+    }
+
+    renderCalendarGrid() {
+        this.calMonthTitle.textContent = `${this.viewYear}年 ${this.viewMonth + 1}月`;
+        this.calDaysGrid.innerHTML = '';
+
+        // 计算当前月的第一天是星期几（0 为周日，1-6 为周一至周六）
+        const firstDayObj = new Date(this.viewYear, this.viewMonth, 1);
+        let firstDayOfWeek = firstDayObj.getDay(); // 0(Sun) - 6(Sat)
+        // 转换为中国习惯（周一为 0，周日为 6）
+        let startOffset = (firstDayOfWeek + 6) % 7;
+
+        // 当前月总天数
+        const totalDays = new Date(this.viewYear, this.viewMonth + 1, 0).getDate();
+
+        // 填充月首空白占位
+        for (let i = 0; i < startOffset; i++) {
+            const emptyCell = document.createElement('div');
+            emptyCell.className = "py-2 text-transparent select-none";
+            emptyCell.textContent = "-";
+            this.calDaysGrid.appendChild(emptyCell);
+        }
+
+        const dateSet = new Set(this.availableDates);
+
+        // 渲染每一天
+        for (let day = 1; day <= totalDays; day++) {
+            const dayStr = String(day).padStart(2, '0');
+            const monthStr = String(this.viewMonth + 1).padStart(2, '0');
+            const fullDate = `${this.viewYear}-${monthStr}-${dayStr}`;
+
+            const hasData = dateSet.has(fullDate);
+            const isSelected = (this.currentLoadedDate === fullDate);
+
+            const dayBtn = document.createElement('button');
+            dayBtn.type = "button";
+
+            let baseClasses = "relative py-1.5 rounded-xl text-xs transition-all duration-150 flex items-center justify-center font-medium ";
+
+            if (isSelected) {
+                baseClasses += "calendar-day-active ";
+                if (hasData) baseClasses += "calendar-day-has-data ";
+            } else if (hasData) {
+                baseClasses += "calendar-day-has-data hover:bg-rose-50 hover:text-rose-600 text-slate-900 cursor-pointer ";
+            } else {
+                baseClasses += "text-slate-300 cursor-not-allowed ";
+            }
+
+            dayBtn.className = baseClasses;
+            dayBtn.textContent = day;
+
+            if (hasData) {
+                dayBtn.title = `${fullDate} (点击查看复盘)`;
+                dayBtn.addEventListener('click', () => {
+                    this.selectDate(fullDate);
+                    this.closeCalendarPopover();
+                });
+            } else {
+                dayBtn.setAttribute('disabled', 'true');
+            }
+
+            this.calDaysGrid.appendChild(dayBtn);
+        }
+        lucide.createIcons();
+    }
+
+    selectDate(date) {
+        if (!date) return;
+        this.currentLoadedDate = date;
+
+        if (this.calendarSelectedText) {
+            const isLatest = (this.availableDates.length > 0 && this.availableDates[0] === date);
+            this.calendarSelectedText.textContent = date + (isLatest ? ' (最新)' : '');
+        }
+
+        if (this.select) {
+            this.select.value = date;
+        }
+
+        this.loadDailyDetails(date);
     }
 
     initEditModalDOM() {
@@ -76,6 +260,11 @@ export class ReviewTab {
         }
 
         this.currentLoadedDate = date;
+        if (this.calendarSelectedText) {
+            const isLatest = (this.availableDates.length > 0 && this.availableDates[0] === date);
+            this.calendarSelectedText.textContent = date + (isLatest ? ' (最新)' : '');
+        }
+
         this.loader.classList.remove('hidden');
         this.accordionContainer.innerHTML = '';
         this.editBtn.classList.add('hidden');

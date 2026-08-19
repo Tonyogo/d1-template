@@ -150,6 +150,36 @@ html {
   border-color: rgba(99, 102, 241, 0.35);
 }
 
+/* Financial Calendar Popover Utilities */
+.calendar-day-active {
+  background-color: #e11d48;
+  color: #ffffff !important;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(225, 29, 72, 0.3);
+}
+
+.calendar-day-has-data {
+  position: relative;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.calendar-day-has-data::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 9999px;
+  background-color: #e11d48;
+}
+
+.calendar-day-active.calendar-day-has-data::after {
+  background-color: #ffffff;
+}
+
 /* Safe area inset support for mobile devices (iPhone Notch / Home Bar) */
 .pb-safe {
   padding-bottom: max(1.25rem, calc(env(safe-area-inset-bottom, 0px) + 0.5rem));

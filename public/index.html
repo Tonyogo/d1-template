@@ -202,11 +202,58 @@
                         <i data-lucide="calendar" class="w-5 h-5 text-rose-600"></i>
                     </div>
                     <div>
-                        <label for="date-select" class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider">选择复盘交易日</label>
-                        <div class="flex items-center gap-2.5 mt-1">
-                            <select id="date-select" class="block w-48 pl-3 pr-8 py-1.5 text-xs border border-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 rounded-xl bg-slate-50 font-mono font-semibold text-slate-900">
+                        <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider">选择复盘交易日</label>
+                        <div class="relative flex items-center gap-2.5 mt-1">
+                            <!-- 隐藏的 select，用于兼容可能存在的旧引用及自动化测试 -->
+                            <select id="date-select" class="hidden">
                                 <option value="">加载中...</option>
                             </select>
+
+                            <!-- 日历触发器按钮 -->
+                            <button id="calendar-trigger-btn" type="button" class="flex items-center space-x-2 px-3 py-1.5 border border-slate-200 hover:border-rose-500/50 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-rose-500/20 rounded-xl bg-slate-50 text-slate-900 transition-all font-mono font-semibold text-xs shadow-xs">
+                                <i data-lucide="calendar" class="w-3.5 h-3.5 text-rose-600"></i>
+                                <span id="calendar-selected-text">加载中...</span>
+                                <i data-lucide="chevron-down" id="calendar-trigger-chevron" class="w-3.5 h-3.5 text-slate-400 transition-transform duration-200"></i>
+                            </button>
+
+                            <!-- 日历 Popover 弹出层 -->
+                            <div id="calendar-popover" class="hidden absolute top-full left-0 mt-2 z-50 w-72 bg-white rounded-2xl border border-slate-200/90 shadow-xl p-4 space-y-3">
+                                <!-- 日历顶栏：年月切换 -->
+                                <div class="flex items-center justify-between">
+                                    <button id="cal-prev-month-btn" type="button" class="p-1 hover:bg-slate-100 rounded-lg text-slate-500 transition">
+                                        <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                                    </button>
+                                    <span id="cal-month-title" class="text-xs font-bold text-slate-800 font-mono">2026年 8月</span>
+                                    <button id="cal-next-month-btn" type="button" class="p-1 hover:bg-slate-100 rounded-lg text-slate-500 transition">
+                                        <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+
+                                <!-- 星期表头 -->
+                                <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-400 border-b border-slate-100 pb-1.5">
+                                    <span>一</span>
+                                    <span>二</span>
+                                    <span>三</span>
+                                    <span>四</span>
+                                    <span>五</span>
+                                    <span class="text-rose-400">六</span>
+                                    <span class="text-rose-400">日</span>
+                                </div>
+
+                                <!-- 日期格子网格 -->
+                                <div id="cal-days-grid" class="grid grid-cols-7 gap-1 text-center font-mono text-xs"></div>
+
+                                <!-- 底部快捷与图例 -->
+                                <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-400">
+                                    <span class="flex items-center gap-1">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-rose-600"></span> 有复盘数据
+                                    </span>
+                                    <button id="cal-latest-date-btn" type="button" class="text-rose-600 hover:text-rose-700 font-bold hover:underline">
+                                        最新交易日
+                                    </button>
+                                </div>
+                            </div>
+
                             <button id="review-edit-btn" class="hidden px-3 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-600 hover:text-slate-900 rounded-xl text-xs font-medium transition flex items-center space-x-1.5 h-8">
                                 <i data-lucide="edit-3" class="w-3.5 h-3.5 text-slate-400"></i>
                                 <span>修正数据</span>
