@@ -30,6 +30,7 @@
         }
     </script>
     <script src="/js/libs/lucide.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
     <link rel="stylesheet" href="/css/app.css">
 </head>
 <body class="bg-slate-50 font-sans text-slate-800 antialiased min-h-screen flex flex-col pb-24 md:pb-0 selection:bg-rose-500 selection:text-white">
@@ -623,6 +624,93 @@
                     <i data-lucide="check" class="w-3.5 h-3.5"></i>
                     <span>确认修改并入库</span>
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: K-Line Chart -->
+    <div id="kline-modal" class="hidden fixed inset-0 z-[110] flex items-center justify-center p-3 sm:p-6 bg-slate-950/75 backdrop-blur-md transition-opacity duration-200">
+        <div id="kline-modal-backdrop" class="absolute inset-0"></div>
+        <div class="relative max-w-5xl w-full bg-white rounded-2xl overflow-hidden shadow-2xl flex flex-col border border-slate-200 z-10 max-h-[92vh]">
+            <!-- Header -->
+            <div class="px-5 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/80">
+                <div class="flex items-center space-x-3">
+                    <div class="p-2 bg-rose-50 text-rose-600 rounded-xl border border-rose-100 flex items-center justify-center">
+                        <i data-lucide="line-chart" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <h3 id="kline-stock-name" class="text-sm font-bold text-slate-900">加载中...</h3>
+                            <span id="kline-stock-code" class="px-2 py-0.5 bg-slate-200/70 text-slate-700 rounded text-xs font-mono font-semibold">------</span>
+                        </div>
+                        <div class="flex items-center space-x-3 mt-1 text-xs">
+                            <span id="kline-latest-price" class="font-mono font-bold text-slate-900 text-sm">--</span>
+                            <span id="kline-price-change" class="font-mono font-semibold px-1.5 py-0.5 rounded text-[11px]">--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Range Switcher & Close -->
+                <div class="flex items-center space-x-3">
+                    <div class="hidden sm:flex items-center bg-slate-200/70 p-1 rounded-xl border border-slate-200">
+                        <button id="kline-btn-30" class="px-3 py-1 text-xs font-semibold rounded-lg text-slate-600 hover:text-slate-900 transition">30日</button>
+                        <button id="kline-btn-60" class="px-3 py-1 text-xs font-semibold rounded-lg bg-white text-slate-900 shadow-sm border border-slate-200/60 transition">60日</button>
+                        <button id="kline-btn-120" class="px-3 py-1 text-xs font-semibold rounded-lg text-slate-600 hover:text-slate-900 transition">120日</button>
+                    </div>
+                    <button id="kline-modal-close-btn" class="p-2 hover:bg-slate-200/60 rounded-xl text-slate-400 hover:text-slate-600 transition">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stock Quote Stat Bar -->
+            <div class="grid grid-cols-3 gap-2 px-5 py-2.5 bg-slate-50/50 border-b border-slate-100 text-xs font-mono">
+                <div class="flex items-center space-x-1.5">
+                    <span class="text-slate-400 font-sans">高:</span>
+                    <span id="kline-high-price" class="font-semibold text-slate-700">--</span>
+                </div>
+                <div class="flex items-center space-x-1.5">
+                    <span class="text-slate-400 font-sans">低:</span>
+                    <span id="kline-low-price" class="font-semibold text-slate-700">--</span>
+                </div>
+                <div class="flex items-center space-x-1.5">
+                    <span class="text-slate-400 font-sans">开:</span>
+                    <span id="kline-open-price" class="font-semibold text-slate-700">--</span>
+                </div>
+            </div>
+
+            <!-- Mobile Range Switcher -->
+            <div class="flex sm:hidden justify-center bg-slate-50/50 px-4 py-2 border-b border-slate-100">
+                <div class="inline-flex bg-slate-200/70 p-1 rounded-xl border border-slate-200 w-full justify-around">
+                    <button id="kline-btn-30-m" class="px-4 py-1 text-xs font-semibold rounded-lg text-slate-600">30日</button>
+                    <button id="kline-btn-60-m" class="px-4 py-1 text-xs font-semibold rounded-lg bg-white text-slate-900 shadow-sm">60日</button>
+                    <button id="kline-btn-120-m" class="px-4 py-1 text-xs font-semibold rounded-lg text-slate-600">120日</button>
+                </div>
+            </div>
+
+            <!-- Chart Body -->
+            <div class="relative flex-grow min-h-[420px] sm:min-h-[480px] p-4 bg-white flex flex-col">
+                <div id="kline-chart-container" class="w-full h-[400px] sm:h-[460px]"></div>
+
+                <!-- Loader -->
+                <div id="kline-loader" class="absolute inset-0 bg-white/80 backdrop-blur-xs flex flex-col items-center justify-center space-y-2 z-20">
+                    <div class="w-8 h-8 border-3 border-rose-500 border-t-transparent rounded-full animate-spin"></div>
+                    <span class="text-xs font-medium text-slate-500">正在请求行情与计算指标...</span>
+                </div>
+
+                <!-- Error Overlay -->
+                <div id="kline-error-overlay" class="hidden absolute inset-0 bg-white flex flex-col items-center justify-center space-y-3 z-20 p-6 text-center">
+                    <div class="w-12 h-12 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center">
+                        <i data-lucide="alert-circle" class="w-6 h-6"></i>
+                    </div>
+                    <div class="space-y-1">
+                        <h4 class="text-sm font-bold text-slate-900">无法加载行情数据</h4>
+                        <p class="text-xs text-slate-500">请检查网络连接或股票代码是否正确</p>
+                    </div>
+                    <button id="kline-retry-btn" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded-xl shadow-sm transition">
+                        重新加载
+                    </button>
+                </div>
             </div>
         </div>
     </div>
