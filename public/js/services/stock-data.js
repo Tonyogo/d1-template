@@ -70,7 +70,7 @@ export class StockDataService {
             return this.cache.get(cacheKey);
         }
 
-        const url = `https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?param=${symbol},day,,,{count},qfq`;
+        const url = `https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?param=${symbol},day,,,${count},qfq`;
 
         try {
             // Using JSONP or standard fetch if CORS permits, or fallback via proxy if needed.

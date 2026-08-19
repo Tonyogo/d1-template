@@ -221,11 +221,10 @@ export class KlineModalComponent {
             };
         });
 
-        // Recalculate MAs on the sliced candles array
-        const closes = candles.map(c => c.close);
-        const ma5 = this.stockDataService.calculateMA(5, closes);
-        const ma10 = this.stockDataService.calculateMA(10, closes);
-        const ma20 = this.stockDataService.calculateMA(20, closes);
+        // Use pre-calculated MAs from candles array (calculated over full dataset in StockDataService)
+        const ma5 = candles.map(c => c.ma5);
+        const ma10 = candles.map(c => c.ma10);
+        const ma20 = candles.map(c => c.ma20);
 
         const option = {
             animation: false,
