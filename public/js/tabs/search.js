@@ -210,15 +210,15 @@ export class SearchTab {
 
                     const statusStyle = this.app.getStatusBadgeStyle(latest.status);
                     card.innerHTML = `
-                    <button class="w-full flex items-center justify-between p-5 hover:bg-slate-50/50 transition text-left" toggle-stock-code="${stock.code}">
-                        <div class="flex items-center space-x-3.5">
+                    <div class="w-full flex items-center justify-between p-5 hover:bg-slate-50/50 transition text-left">
+                        <div class="flex items-center space-x-3.5 cursor-pointer" stock-kline-trigger code="${stock.code}" name="${stock.name}">
                             <div class="p-2.5 bg-rose-50 rounded-xl text-rose-600 border border-rose-100/60 shrink-0">
                                 <i data-lucide="trending-up" class="w-4 h-4"></i>
                             </div>
                             <div>
                                 <h3 class="text-sm font-bold text-slate-900 flex items-baseline space-x-2">
-                                    <span>${stock.name}</span>
-                                    <span class="text-xs text-slate-400 font-mono font-medium">${stock.code}</span>
+                                    <span class="hover:text-rose-600 hover:underline transition">${stock.name}</span>
+                                    <span class="text-xs text-slate-400 font-mono font-medium hover:text-rose-600 hover:underline transition">${stock.code}</span>
                                 </h3>
                                 <p class="text-[11px] text-slate-400 font-mono mt-0.5">历史涨停 ${stock.history.length} 次 | 最近一次: ${latest.date}</p>
                             </div>
@@ -227,9 +227,11 @@ export class SearchTab {
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${statusStyle}">
                                 ${latest.status || '涨停'}
                             </span>
-                            <div class="p-1 text-slate-400"><i data-lucide="chevron-down" class="w-4 h-4 transition-transform duration-200 ${shouldExpand ? 'rotate-180' : ''}"></i></div>
+                            <button class="p-1 text-slate-400 hover:text-slate-600 transition" toggle-collapse-btn>
+                                <i data-lucide="chevron-down" class="w-4 h-4 transition-transform duration-200 ${shouldExpand ? 'rotate-180' : ''}"></i>
+                            </button>
                         </div>
-                    </button>
+                    </div>
                     <div class="stock-collapse ${shouldExpand ? '' : 'hidden'} border-t border-slate-100 overflow-x-auto bg-slate-50/30 p-2 md:p-0">
                             <table class="min-w-full divide-y divide-slate-100">
                                 <thead class="bg-slate-50/80 hidden md:table-header-group">
@@ -246,16 +248,26 @@ export class SearchTab {
                         </div>
                     `;
 
-                    const btnToggle = card.querySelector('button');
-                    const collapse = card.querySelector('.stock-collapse');
-                    const icon = btnToggle.querySelector('.transition-transform');
+                    const klineTrigger = card.querySelector('[stock-kline-trigger]');
+                    if (klineTrigger) {
+                        klineTrigger.addEventListener('click', () => {
+                            this.app.openKlineModal(stock.code, stock.name);
+                        });
+                    }
 
-                    btnToggle.addEventListener('click', () => {
-                        collapse.classList.toggle('hidden');
-                        if (icon) {
-                            icon.classList.toggle('rotate-180');
-                        }
-                    });
+                    const btnToggle = card.querySelector('[toggle-collapse-btn]');
+                    const collapse = card.querySelector('.stock-collapse');
+                    const icon = btnToggle ? btnToggle.querySelector('.transition-transform') : null;
+
+                    if (btnToggle) {
+                        btnToggle.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            collapse.classList.toggle('hidden');
+                            if (icon) {
+                                icon.classList.toggle('rotate-180');
+                            }
+                        });
+                    }
 
                     // 给跨 Tab 的跳转项绑定点击监听
                     card.querySelectorAll('[date-link]').forEach(el => {

@@ -3,6 +3,7 @@ import { SearchTab } from './tabs/search.js';
 import { ReviewTab } from './tabs/review.js';
 import { ActiveTab } from './tabs/active.js';
 import { UploadTab } from './tabs/upload.js';
+import { KlineModalComponent } from './components/kline-modal.js';
 
 class App {
     constructor() {
@@ -33,8 +34,15 @@ class App {
         this.reviewTab = new ReviewTab(this);
         this.activeTab = new ActiveTab(this);
         this.uploadTab = new UploadTab(this);
+        this.klineModal = new KlineModalComponent();
 
         this.reloadSummaries();
+    }
+
+    openKlineModal(stockCode, stockName) {
+        if (this.klineModal) {
+            this.klineModal.open(stockCode, stockName);
+        }
     }
 
     async reloadSummaries() {

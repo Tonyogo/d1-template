@@ -65,7 +65,7 @@ export class ActiveTab {
                         <span class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">领涨龙头股</span>
                         <div class="flex flex-wrap gap-1.5">
                             ${sector.leaders.map(ld => `
-                                <button class="inline-flex items-center px-2.5 py-1 rounded-xl text-xs font-semibold bg-rose-50 text-rose-700 hover:bg-rose-100 hover:text-rose-900 border border-rose-100/80 transition-all active:scale-95" stock-leader-link="${ld.code}" stock-leader-name="${ld.name}">
+                                <button class="inline-flex items-center px-2.5 py-1 rounded-xl text-xs font-semibold bg-rose-50 text-rose-700 hover:bg-rose-100 hover:text-rose-900 border border-rose-100/80 transition-all active:scale-95" stock-kline-link="${ld.code}" stock-kline-name="${ld.name}">
                                     <span class="w-1.5 h-1.5 bg-rose-600 rounded-full mr-1.5 shrink-0"></span>
                                     <span>${ld.name}</span>
                                     <span class="text-rose-400 font-mono ml-1 font-medium">(${ld.count}次)</span>
@@ -114,6 +114,15 @@ export class ActiveTab {
                     const code = el.getAttribute('stock-leader-link');
                     const name = el.getAttribute('stock-leader-name');
                     this.app.deepLinkStock(code, name);
+                });
+            });
+
+            card.querySelectorAll('[stock-kline-link]').forEach(el => {
+                el.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const code = el.getAttribute('stock-kline-link');
+                    const name = el.getAttribute('stock-kline-name');
+                    this.app.openKlineModal(code, name);
                 });
             });
 
