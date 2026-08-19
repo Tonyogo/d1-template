@@ -162,19 +162,24 @@ export class UploadTab {
     }
 
     togglePendingControls(enabled) {
+        this.dropZone.style.pointerEvents = enabled ? 'auto' : 'none';
         this.pendingRefreshBtn.disabled = !enabled;
-        this.pendingProcessAllBtn.disabled = !enabled;
         if (this.concurrencySelect) this.concurrencySelect.disabled = !enabled;
 
         if (enabled) {
+            this.dropZone.classList.remove('opacity-50');
             this.pendingRefreshBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-            this.pendingProcessAllBtn.classList.remove('opacity-50', 'cursor-not-allowed');
             if (this.concurrencySelect) this.concurrencySelect.classList.remove('opacity-50', 'cursor-not-allowed');
+
+            // 恢复一键处理按钮的初始状态
+            this.pendingProcessAllBtn.removeAttribute('disabled');
+            this.pendingProcessAllBtn.className = "justify-center px-4 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center space-x-1.5";
+            this.pendingProcessAllBtn.innerHTML = `<i data-lucide="play" class="w-3.5 h-3.5"></i> <span>一键并发处理</span>`;
         } else {
+            this.dropZone.classList.add('opacity-50');
             this.pendingRefreshBtn.classList.add('opacity-50', 'cursor-not-allowed');
-            this.pendingProcessAllBtn.classList.add('opacity-50', 'cursor-not-allowed');
-            if (this.concurrencySelect) this.concurrencySelect.classList.add('opacity-50', 'cursor-not-allowed');
         }
+        lucide.createIcons();
     }
 
     formatFileSize(bytes) {
@@ -340,7 +345,10 @@ export class UploadTab {
 
         const sizeStr = this.formatFileSize(img.size);
         const formattedTime = new Date(img.uploadedAt).toLocaleString('zh-CN');
-        const suggestedDateVal = img.suggestedDate || this.getTodayDateString();
+
+        // 目标日志缓存：读取时优先使用 LocalStorage 的局部修改日期
+        const cachedDate = localStorage.getItem(`pending_date_cache_${img.key}`);
+        const suggestedDateVal = cachedDate || img.suggestedDate || this.getTodayDateString();
         const statusBadge = this.getStatusBadgeHTML(img);
 
         row.innerHTML = `
@@ -408,6 +416,14 @@ export class UploadTab {
             this.openPreviewModal(img.key, img.originalName);
         });
 
+        // 目标日志缓存：日期更改事件触发时，自动本地写入 localStorage
+        dateInput.addEventListener('change', (e) => {
+            const dateVal = e.target.value;
+            if (this.isValidDate(dateVal)) {
+                localStorage.setItem(`pending_date_cache_${img.key}`, dateVal);
+            }
+        });
+
         processBtn.addEventListener('click', async () => {
             const dateVal = dateInput.value;
             if (!this.isValidDate(dateVal)) {
@@ -444,6 +460,9 @@ export class UploadTab {
             const res = await api.processPendingImage(key, date, proxyConfig);
             if (res.error) throw new Error(res.error);
 
+            // 清除缓存
+            localStorage.removeItem(`pending_date_cache_${key}`);
+
             // 成功后移除行
             rowElement.remove();
             if (this.pendingTbody.children.length === 0) {
@@ -476,6 +495,9 @@ export class UploadTab {
             const res = await api.deletePendingImage(key);
             if (res.error) throw new Error(res.error);
 
+            // 清除缓存
+            localStorage.removeItem(`pending_date_cache_${key}`);
+
             rowElement.remove();
             if (this.pendingTbody.children.length === 0) {
                 await this.loadPendingQueue();
@@ -489,7 +511,17 @@ export class UploadTab {
     }
 
     async processAllPending() {
-        if (this.isProcessing) return;
+        if (this.isProcessing) {
+            // 当处于批处理状态时，再次点击一键按钮转为【取消中止】动作
+            if (!this.isCancelRequested) {
+                this.isCancelRequested = true;
+                this.pendingProcessAllBtn.setAttribute('disabled', 'true');
+                this.pendingProcessAllBtn.className = "justify-center px-4 py-1.5 bg-slate-400 text-white rounded-xl text-xs font-bold shadow-sm flex items-center space-x-1.5 cursor-not-allowed";
+                this.pendingProcessAllBtn.innerHTML = `<div class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> <span>正在优雅停止...</span>`;
+                console.log("User requested cancellation of batch processing.");
+            }
+            return;
+        }
 
         const rows = Array.from(this.pendingTbody.querySelectorAll('[data-key]'));
         if (rows.length === 0) {
@@ -515,16 +547,29 @@ export class UploadTab {
         }
 
         this.isProcessing = true;
+        this.isCancelRequested = false;
         this.togglePendingControls(false);
+
+        // 核心：自切换为 🛑 中止取消状态形态
+        this.pendingProcessAllBtn.removeAttribute('disabled');
+        this.pendingProcessAllBtn.className = "justify-center px-4 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center space-x-1.5";
+        this.pendingProcessAllBtn.innerHTML = `<i data-lucide="square" class="w-3.5 h-3.5"></i> <span>🛑 停止处理</span>`;
+        lucide.createIcons();
 
         const proxyConfig = this.getProxyConfig();
 
-        // 简易并发控制调度器
         let index = 0;
         const total = itemsToProcess.length;
+        let successCount = 0;
+        let failCount = 0;
 
         const worker = async () => {
             while (index < total) {
+                // 判断是否中断退出循环
+                if (this.isCancelRequested) {
+                    break;
+                }
+
                 const currentIndex = index++;
                 const item = itemsToProcess[currentIndex];
                 const processBtn = item.row.querySelector('.process-item-btn');
@@ -541,7 +586,12 @@ export class UploadTab {
                 try {
                     const res = await api.processPendingImage(item.key, item.date, proxyConfig);
                     if (res.error) throw new Error(res.error);
+
+                    // 清除缓存
+                    localStorage.removeItem(`pending_date_cache_${item.key}`);
+
                     item.row.remove();
+                    successCount++;
                 } catch (err) {
                     console.error(`Error processing ${item.key}:`, err);
                     if (processBtn) {
@@ -550,6 +600,7 @@ export class UploadTab {
                     }
                     if (deleteBtn) deleteBtn.disabled = false;
                     if (picker) picker.disabled = false;
+                    failCount++;
                 }
             }
         };
@@ -562,8 +613,17 @@ export class UploadTab {
         await Promise.all(workers);
 
         this.isProcessing = false;
+        const stoppedEarly = this.isCancelRequested;
+        this.isCancelRequested = false;
+
         this.togglePendingControls(true);
         lucide.createIcons();
+
+        if (stoppedEarly) {
+            alert(`并发处理已强行中止！\n已成功: ${successCount} 个\n已失败: ${failCount} 个`);
+        } else {
+            alert(`批量处理全部完成！\n成功: ${successCount} 个\n失败: ${failCount} 个`);
+        }
 
         await this.loadPendingQueue();
         this.app.reloadSummaries();
