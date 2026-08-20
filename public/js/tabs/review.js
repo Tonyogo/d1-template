@@ -326,10 +326,15 @@ export class ReviewTab {
                                 <span>${stock.time || '--:--'}</span>
                             </span>
                         </td>
-                        <td class="hidden md:table-cell px-5 py-3 text-xs text-slate-500 font-mono whitespace-nowrap cursor-pointer hover:text-rose-600 hover:underline transition" stock-kline-code="${stock.code}" stock-kline-name="${stock.name}">${stock.code}</td>
-                        <td class="py-1 md:px-5 md:py-3 text-xs text-slate-900 whitespace-nowrap cursor-pointer flex items-baseline space-x-2 md:table-cell font-semibold" stock-kline-code="${stock.code}" stock-kline-name="${stock.name}">
-                            <span class="text-sm md:text-xs font-bold text-slate-900 hover:text-rose-600 hover:underline transition">${stock.name}</span>
-                            <span class="text-[11px] text-slate-400 font-mono font-medium md:hidden hover:text-rose-600 hover:underline transition">${stock.code}</span>
+                        <td class="hidden md:table-cell px-5 py-3 text-xs text-slate-500 font-mono whitespace-nowrap cursor-pointer hover:text-rose-600 hover:underline transition" stock-kline-trigger="${stock.code}" stock-kline-name="${stock.name}">${stock.code}</td>
+                        <td class="py-1.5 md:px-5 md:py-3 text-xs text-slate-900 whitespace-nowrap flex items-center justify-between md:table-cell font-semibold">
+                            <div class="cursor-pointer flex items-baseline space-x-2 group" stock-kline-trigger="${stock.code}" stock-kline-name="${stock.name}">
+                                <span class="text-sm md:text-xs font-bold text-slate-900 group-hover:text-rose-600 group-hover:underline transition">${stock.name}</span>
+                                <span class="text-xs text-slate-400 font-mono font-medium group-hover:text-rose-600 transition">${stock.code}</span>
+                            </div>
+                            <button type="button" class="md:hidden inline-flex items-center px-2 py-0.5 rounded-lg text-[11px] font-semibold bg-rose-50 text-rose-600 border border-rose-200/80 active:bg-rose-100 transition" stock-kline-trigger="${stock.code}" stock-kline-name="${stock.name}">
+                                <i data-lucide="line-chart" class="w-3 h-3 mr-1"></i>日K
+                            </button>
                         </td>
                         <td class="hidden md:table-cell px-5 py-3 text-xs text-slate-500 font-mono whitespace-nowrap">${stock.time || '--:--'}</td>
                         <td class="pt-2 md:pt-0 md:px-5 md:py-3 text-xs text-slate-600 bg-slate-50/80 rounded-xl p-3 md:p-0 md:bg-transparent md:table-cell">
@@ -389,10 +394,10 @@ export class ReviewTab {
                 });
             });
 
-            item.querySelectorAll('[stock-kline-code]').forEach(el => {
+            item.querySelectorAll('[stock-kline-trigger]').forEach(el => {
                 el.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    const code = el.getAttribute('stock-kline-code');
+                    const code = el.getAttribute('stock-kline-trigger');
                     const name = el.getAttribute('stock-kline-name');
                     this.app.openKlineModal(code, name);
                 });

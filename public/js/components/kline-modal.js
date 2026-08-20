@@ -226,6 +226,7 @@ export class KlineModalComponent {
         const ma10 = candles.map(c => c.ma10);
         const ma20 = candles.map(c => c.ma20);
 
+        const isSmallScreen = window.innerWidth < 640;
         const option = {
             animation: false,
             tooltip: {
@@ -276,16 +277,16 @@ export class KlineModalComponent {
             },
             grid: [
                 {
-                    left: '50px',
-                    right: '20px',
-                    top: '30px',
-                    height: '62%'
+                    left: isSmallScreen ? '42px' : '50px',
+                    right: isSmallScreen ? '12px' : '20px',
+                    top: '25px',
+                    height: isSmallScreen ? '58%' : '62%'
                 },
                 {
-                    left: '50px',
-                    right: '20px',
-                    top: '78%',
-                    height: '16%'
+                    left: isSmallScreen ? '42px' : '50px',
+                    right: isSmallScreen ? '12px' : '20px',
+                    top: isSmallScreen ? '75%' : '78%',
+                    height: isSmallScreen ? '15%' : '16%'
                 }
             ],
             xAxis: [
@@ -334,11 +335,11 @@ export class KlineModalComponent {
                     end: 100
                 },
                 {
-                    show: true,
+                    show: !isSmallScreen,
                     xAxisIndex: [0, 1],
                     type: 'slider',
-                    top: '96%',
-                    height: '18px',
+                    top: '95%',
+                    height: '16px',
                     borderColor: '#e2e8f0',
                     fillerColor: 'rgba(244, 63, 94, 0.15)',
                     handleStyle: { color: '#f43f5e', borderColor: '#f43f5e' },
@@ -393,6 +394,11 @@ export class KlineModalComponent {
 
         this.chartInstance.setOption(option, true);
         this.chartInstance.resize();
+        setTimeout(() => {
+            if (this.chartInstance) {
+                this.chartInstance.resize();
+            }
+        }, 50);
     }
 
     close() {
