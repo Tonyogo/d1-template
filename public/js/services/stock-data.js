@@ -132,11 +132,19 @@ export class StockDataService {
             const ma10 = this.calculateMA(10, closes);
             const ma20 = this.calculateMA(20, closes);
 
-            // Attach MAs to candles
+            // Attach MAs, prevClose, change, and changePct to each candle
             for (let i = 0; i < candles.length; i++) {
                 candles[i].ma5 = ma5[i];
                 candles[i].ma10 = ma10[i];
                 candles[i].ma20 = ma20[i];
+
+                const prevC = i > 0 ? candles[i - 1].close : candles[i].open;
+                const chg = parseFloat((candles[i].close - prevC).toFixed(2));
+                const chgPct = prevC > 0 ? parseFloat(((chg / prevC) * 100).toFixed(2)) : 0;
+
+                candles[i].prevClose = prevC;
+                candles[i].change = chg;
+                candles[i].changePct = chgPct;
             }
 
             // Calculate latest stats (change, changePct)

@@ -245,20 +245,24 @@ export class KlineModalComponent {
                     const candle = candles[dataIndex];
                     if (!candle) return '';
 
-                    const isRise = candle.close >= candle.open;
-                    const colorClass = isRise ? 'color: #ef4444;' : 'color: #10b981;';
-                    const change = candle.close - candle.open;
-                    const pct = candle.open > 0 ? ((change / candle.open) * 100).toFixed(2) : '0.00';
-                    const sign = change >= 0 ? '+' : '';
+                    const change = candle.change !== undefined ? candle.change : (candle.close - candle.open);
+                    const pct = candle.changePct !== undefined ? candle.changePct : (candle.open > 0 ? ((change / candle.open) * 100) : 0);
+                    const isChangePositive = change >= 0;
+                    const changeColor = isChangePositive ? '#ef4444' : '#10b981';
+                    const sign = isChangePositive ? '+' : '';
 
                     let html = `<div style="font-weight: bold; margin-bottom: 4px; border-bottom: 1px solid #f1f5f9; padding-bottom: 3px;">${candle.date} - ${stockName}</div>`;
                     html += `<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; font-family: monospace; font-size: 11px;">`;
                     html += `<div>开盘: <span style="font-weight: bold;">${candle.open.toFixed(2)}</span></div>`;
-                    html += `<div>收盘: <span style="font-weight: bold; ${colorClass}">${candle.close.toFixed(2)}</span></div>`;
+                    html += `<div>收盘: <span style="font-weight: bold; color: ${changeColor};">${candle.close.toFixed(2)}</span></div>`;
                     html += `<div>最高: <span style="font-weight: bold; color: #ef4444;">${candle.high.toFixed(2)}</span></div>`;
                     html += `<div>最低: <span style="font-weight: bold; color: #10b981;">${candle.low.toFixed(2)}</span></div>`;
-                    html += `<div>涨跌幅: <span style="font-weight: bold; ${colorClass}">${sign}${pct}%</span></div>`;
+                    html += `<div>涨跌额: <span style="font-weight: bold; color: ${changeColor};">${sign}${change.toFixed(2)}</span></div>`;
+                    html += `<div>涨跌幅: <span style="font-weight: bold; color: ${changeColor};">${sign}${pct.toFixed(2)}%</span></div>`;
                     html += `<div>成交量: <span style="font-weight: bold;">${(candle.volume / 10000).toFixed(2)}万股</span></div>`;
+                    if (candle.prevClose) {
+                        html += `<div>昨收: <span style="font-weight: bold; color: #64748b;">${candle.prevClose.toFixed(2)}</span></div>`;
+                    }
                     html += `</div>`;
 
                     // MA values
