@@ -65,11 +65,16 @@ export class ActiveTab {
                         <span class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">领涨龙头股</span>
                         <div class="flex flex-wrap gap-1.5">
                             ${sector.leaders.map(ld => `
-                                <button class="inline-flex items-center px-2.5 py-1 rounded-xl text-xs font-semibold bg-rose-50 text-rose-700 hover:bg-rose-100 hover:text-rose-900 border border-rose-100/80 transition-all active:scale-95" stock-kline-link="${ld.code}" stock-kline-name="${ld.name}">
-                                    <span class="w-1.5 h-1.5 bg-rose-600 rounded-full mr-1.5 shrink-0"></span>
-                                    <span>${ld.name}</span>
-                                    <span class="text-rose-400 font-mono ml-1 font-medium">(${ld.count}次)</span>
-                                </button>
+                                <div class="inline-flex items-center rounded-xl bg-rose-50 text-rose-700 border border-rose-100/80 hover:border-rose-200 transition-all text-xs font-semibold overflow-hidden shadow-2xs">
+                                    <button type="button" class="inline-flex items-center pl-2.5 pr-1.5 py-1 hover:bg-rose-100/70 hover:text-rose-900 transition-colors" stock-link="${ld.code}" stock-name="${ld.name}" title="检索个股历史涨停">
+                                        <span class="w-1.5 h-1.5 bg-rose-600 rounded-full mr-1.5 shrink-0"></span>
+                                        <span>${ld.name}</span>
+                                        <span class="text-rose-400 font-mono ml-1 font-medium">(${ld.count}次)</span>
+                                    </button>
+                                    <button type="button" class="px-1.5 py-1 bg-rose-100/60 hover:bg-rose-200/80 text-rose-700 border-l border-rose-200/60 transition-colors" stock-kline-trigger="${ld.code}" stock-kline-name="${ld.name}" title="查看日K线">
+                                        <i data-lucide="line-chart" class="w-3 h-3"></i>
+                                    </button>
+                                </div>
                             `).join('')}
                         </div>
                     </div>
@@ -109,18 +114,19 @@ export class ActiveTab {
                 ${leadersMarkup}
             `;
 
-            card.querySelectorAll('[stock-leader-link]').forEach(el => {
-                el.addEventListener('click', () => {
-                    const code = el.getAttribute('stock-leader-link');
-                    const name = el.getAttribute('stock-leader-name');
+            card.querySelectorAll('[stock-link]').forEach(el => {
+                el.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const code = el.getAttribute('stock-link');
+                    const name = el.getAttribute('stock-name');
                     this.app.deepLinkStock(code, name);
                 });
             });
 
-            card.querySelectorAll('[stock-kline-link]').forEach(el => {
+            card.querySelectorAll('[stock-kline-trigger]').forEach(el => {
                 el.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    const code = el.getAttribute('stock-kline-link');
+                    const code = el.getAttribute('stock-kline-trigger');
                     const name = el.getAttribute('stock-kline-name');
                     this.app.openKlineModal(code, name);
                 });

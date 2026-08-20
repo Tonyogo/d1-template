@@ -210,29 +210,29 @@ export class SearchTab {
 
                     const statusStyle = this.app.getStatusBadgeStyle(latest.status);
                     card.innerHTML = `
-                    <div class="w-full flex items-center justify-between p-4 sm:p-5 hover:bg-slate-50/50 transition text-left">
-                        <div class="flex items-center space-x-3 cursor-pointer flex-grow" stock-kline-trigger code="${stock.code}" name="${stock.name}">
+                    <div class="w-full flex items-center justify-between p-4 sm:p-5 hover:bg-slate-50/50 transition text-left cursor-pointer" toggle-collapse-row>
+                        <div class="flex items-center space-x-3 flex-grow truncate">
                             <div class="p-2 sm:p-2.5 bg-rose-50 rounded-xl text-rose-600 border border-rose-100/60 shrink-0">
                                 <i data-lucide="trending-up" class="w-4 h-4"></i>
                             </div>
                             <div class="truncate">
                                 <h3 class="text-sm font-bold text-slate-900 flex items-baseline space-x-2">
-                                    <span class="hover:text-rose-600 hover:underline transition">${stock.name}</span>
+                                    <span class="hover:text-rose-600 transition">${stock.name}</span>
                                     <span class="text-xs text-slate-400 font-mono font-medium hover:text-rose-600 transition">${stock.code}</span>
                                 </h3>
                                 <p class="text-[11px] text-slate-400 font-mono mt-0.5">历史涨停 ${stock.history.length} 次 | 最近一次: ${latest.date}</p>
                             </div>
                         </div>
                         <div class="flex items-center space-x-2 shrink-0">
-                            <button type="button" class="inline-flex items-center px-2 py-1 rounded-lg text-xs font-semibold bg-rose-50 text-rose-600 border border-rose-200/80 active:bg-rose-100 transition" stock-kline-trigger code="${stock.code}" name="${stock.name}">
+                            <button type="button" class="inline-flex items-center px-2 py-1 rounded-lg text-xs font-semibold bg-rose-50 text-rose-600 border border-rose-200/80 hover:bg-rose-100 active:bg-rose-200 transition" stock-kline-trigger code="${stock.code}" name="${stock.name}" title="查看日K线行情">
                                 <i data-lucide="line-chart" class="w-3.5 h-3.5 mr-1"></i>日K
                             </button>
                             <span class="hidden sm:inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${statusStyle}">
                                 ${latest.status || '涨停'}
                             </span>
-                            <button class="p-1.5 text-slate-400 hover:text-slate-600 transition rounded-lg hover:bg-slate-100" toggle-collapse-btn>
+                            <div class="p-1.5 text-slate-400 hover:text-slate-600 transition rounded-lg hover:bg-slate-100" toggle-collapse-btn>
                                 <i data-lucide="chevron-down" class="w-4 h-4 transition-transform duration-200 ${shouldExpand ? 'rotate-180' : ''}"></i>
-                            </button>
+                            </div>
                         </div>
                     </div>
                     <div class="stock-collapse ${shouldExpand ? '' : 'hidden'} border-t border-slate-100 overflow-x-auto bg-slate-50/30 p-2 md:p-0">
@@ -258,13 +258,12 @@ export class SearchTab {
                         });
                     });
 
-                    const btnToggle = card.querySelector('[toggle-collapse-btn]');
+                    const toggleRow = card.querySelector('[toggle-collapse-row]');
                     const collapse = card.querySelector('.stock-collapse');
-                    const icon = btnToggle ? btnToggle.querySelector('.transition-transform') : null;
+                    const icon = toggleRow ? toggleRow.querySelector('.transition-transform') : null;
 
-                    if (btnToggle) {
-                        btnToggle.addEventListener('click', (e) => {
-                            e.stopPropagation();
+                    if (toggleRow) {
+                        toggleRow.addEventListener('click', () => {
                             collapse.classList.toggle('hidden');
                             if (icon) {
                                 icon.classList.toggle('rotate-180');
