@@ -7,7 +7,18 @@ import { KlineModalComponent } from './components/kline-modal.js';
 
 class App {
     constructor() {
-        this.currentTab = 'search';
+        this.validTabs = ['search', 'review', 'active', 'upload'];
+        const hashTab = window.location.hash.replace(/^#\/?/, '').trim();
+        const savedTab = localStorage.getItem('app_active_tab');
+
+        if (this.validTabs.includes(hashTab)) {
+            this.currentTab = hashTab;
+        } else if (savedTab && this.validTabs.includes(savedTab)) {
+            this.currentTab = savedTab;
+        } else {
+            this.currentTab = 'search';
+        }
+
         this.initDOM();
         this.initTabs();
         this.initGlobalEventListeners();
@@ -36,6 +47,8 @@ class App {
         this.uploadTab = new UploadTab(this);
         this.klineModal = new KlineModalComponent();
 
+        // 切换到初始记录的 Tab
+        this.switchTab(this.currentTab, false);
         this.reloadSummaries();
     }
 
@@ -79,8 +92,14 @@ class App {
         }
     }
 
-    switchTab(tab) {
+    switchTab(tab, updateHash = true) {
+        if (!this.validTabs.includes(tab)) return;
         this.currentTab = tab;
+        localStorage.setItem('app_active_tab', tab);
+
+        if (updateHash && window.location.hash.replace(/^#\/?/, '') !== tab) {
+            window.history.replaceState(null, '', '#' + tab);
+        }
 
         // 1. 隐藏所有 Tab 容器
         Object.keys(this.contents).forEach(t => {
@@ -170,6 +189,14 @@ class App {
     }
 
     initGlobalEventListeners() {
+        // 监听浏览器前进/后退中的 Hash 变动
+        window.addEventListener('hashchange', () => {
+            const hashTab = window.location.hash.replace(/^#\/?/, '').trim();
+            if (this.validTabs.includes(hashTab) && hashTab !== this.currentTab) {
+                this.switchTab(hashTab, false);
+            }
+        });
+
         // Global error boundary & unhandled rejection handler
         window.addEventListener('unhandledrejection', (event) => {
             console.error('Unhandled promise rejection:', event.reason);
