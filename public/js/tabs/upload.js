@@ -4,6 +4,8 @@ export class UploadTab {
     constructor(app) {
         this.app = app;
         this.isCancelRequested = false;
+        this.selectedKeys = new Set();
+        this.pendingImagesCache = [];
         this.initDOM();
         this.initProxyDOM();
         this.loadPendingQueue();
@@ -19,6 +21,13 @@ export class UploadTab {
         this.pendingProcessAllBtn = document.getElementById('pending-process-all-btn');
         this.pendingTbody = document.getElementById('pending-tbody');
         this.concurrencySelect = document.getElementById('pending-concurrency-select');
+
+        // 批量工具与 Hook 节点
+        this.pendingQueueBadge = document.getElementById('pending-queue-badge');
+        this.pendingBatchTodayBtn = document.getElementById('pending-batch-today-btn');
+        this.pendingBatchDeleteBtn = document.getElementById('pending-batch-delete-btn');
+        this.pendingBatchDeleteText = document.getElementById('pending-batch-delete-text');
+        this.selectAllHeader = document.getElementById('pending-select-all-header');
 
         // 图片预览 Modal 节点
         this.previewModal = document.getElementById('preview-modal');
@@ -70,6 +79,29 @@ export class UploadTab {
         // 暂存队列监听器绑定
         this.pendingRefreshBtn.addEventListener('click', () => this.loadPendingQueue());
         this.pendingProcessAllBtn.addEventListener('click', () => this.processAllPending());
+
+        // 批量操作监听器绑定
+        if (this.pendingBatchTodayBtn) {
+            this.pendingBatchTodayBtn.addEventListener('click', () => this.batchSetTodayDate());
+        }
+        if (this.pendingBatchDeleteBtn) {
+            this.pendingBatchDeleteBtn.addEventListener('click', () => this.batchDeleteSelected());
+        }
+        if (this.selectAllHeader) {
+            this.selectAllHeader.addEventListener('change', (e) => {
+                const isChecked = e.target.checked;
+                if (isChecked && this.pendingImagesCache) {
+                    this.pendingImagesCache.forEach(img => this.selectedKeys.add(img.key));
+                } else {
+                    this.selectedKeys.clear();
+                }
+                const itemCheckboxes = this.pendingTbody.querySelectorAll('.pending-item-checkbox');
+                itemCheckboxes.forEach(cb => {
+                    cb.checked = isChecked;
+                });
+                this.updateBatchControlsUI();
+            });
+        }
 
         // Modal 监听器绑定
         this.modalCloseBtn.addEventListener('click', () => this.closePreviewModal());
@@ -168,10 +200,97 @@ export class UploadTab {
         };
     }
 
+    extractDateFromFilename(filename) {
+        if (!filename) return null;
+        const name = String(filename).trim();
+
+        // 1. Match YYYY-MM-DD, YYYY_MM_DD, YYYY.MM.DD, or YYYYMMDD
+        const fullDateMatch = name.match(/(20\d{2})[-_.年](\d{1,2})[-_.月](\d{1,2})日?/);
+        if (fullDateMatch) {
+            const year = fullDateMatch[1];
+            const month = fullDateMatch[2].padStart(2, '0');
+            const day = fullDateMatch[3].padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        const compactMatch = name.match(/(20\d{2})(\d{2})(\d{2})/);
+        if (compactMatch) {
+            return `${compactMatch[1]}-${compactMatch[2]}-${compactMatch[3]}`;
+        }
+
+        // 2. Match MM-DD, M.D (e.g. 08-19, 8.19, 8月19日) -> prepends current year
+        const monthDayMatch = name.match(/(\d{1,2})[-_.月](\d{1,2})日?/);
+        if (monthDayMatch) {
+            const year = new Date().getFullYear();
+            const month = monthDayMatch[1].padStart(2, '0');
+            const day = monthDayMatch[2].padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        return null;
+    }
+
+    updateBatchControlsUI() {
+        const count = this.selectedKeys.size;
+        if (this.pendingBatchDeleteBtn) {
+            this.pendingBatchDeleteBtn.disabled = count === 0 || this.isProcessing;
+            if (count > 0) {
+                this.pendingBatchDeleteBtn.className = "px-3 py-1.5 border border-rose-300 bg-rose-50 text-rose-700 rounded-xl text-xs font-semibold transition flex items-center space-x-1 shadow-2xs cursor-pointer hover:bg-rose-100";
+                if (this.pendingBatchDeleteText) this.pendingBatchDeleteText.textContent = `批量删除 (${count})`;
+            } else {
+                this.pendingBatchDeleteBtn.className = "px-3 py-1.5 border border-rose-200/80 bg-rose-50/50 text-rose-600 opacity-50 cursor-not-allowed rounded-xl text-xs font-semibold transition flex items-center space-x-1 shadow-2xs";
+                if (this.pendingBatchDeleteText) this.pendingBatchDeleteText.textContent = '批量删除';
+            }
+        }
+        if (this.selectAllHeader) {
+            const totalRows = this.pendingImagesCache ? this.pendingImagesCache.length : 0;
+            this.selectAllHeader.checked = totalRows > 0 && this.selectedKeys.size === totalRows;
+            this.selectAllHeader.indeterminate = this.selectedKeys.size > 0 && this.selectedKeys.size < totalRows;
+            this.selectAllHeader.disabled = this.isProcessing;
+        }
+    }
+
+    async batchDeleteSelected() {
+        const count = this.selectedKeys.size;
+        if (count === 0) return;
+
+        if (!confirm(`确定要批量删除选中的 ${count} 个暂存文件吗？`)) return;
+
+        this.togglePendingControls(false);
+        try {
+            for (const key of Array.from(this.selectedKeys)) {
+                await api.deletePendingImage(key);
+                localStorage.removeItem(`pending_date_cache_${key}`);
+            }
+            this.selectedKeys.clear();
+            await this.loadPendingQueue();
+        } catch (err) {
+            console.error('Batch delete failed:', err);
+            alert('批量删除失败: ' + (err.message || err));
+        } finally {
+            this.togglePendingControls(true);
+        }
+    }
+
+    batchSetTodayDate() {
+        const today = this.getTodayDateString();
+        const inputs = this.pendingTbody.querySelectorAll('.pending-date-input');
+        inputs.forEach(input => {
+            input.value = today;
+            const row = input.closest('[data-key]');
+            if (row) {
+                const key = row.getAttribute('data-key');
+                localStorage.setItem(`pending_date_cache_${key}`, today);
+            }
+        });
+    }
+
     togglePendingControls(enabled) {
         this.dropZone.style.pointerEvents = enabled ? 'auto' : 'none';
         this.pendingRefreshBtn.disabled = !enabled;
         if (this.concurrencySelect) this.concurrencySelect.disabled = !enabled;
+        if (this.pendingBatchTodayBtn) this.pendingBatchTodayBtn.disabled = !enabled;
+        if (this.selectAllHeader) this.selectAllHeader.disabled = !enabled;
 
         if (enabled) {
             this.dropZone.classList.remove('opacity-50');
@@ -186,6 +305,7 @@ export class UploadTab {
             this.dropZone.classList.add('opacity-50');
             this.pendingRefreshBtn.classList.add('opacity-50', 'cursor-not-allowed');
         }
+        this.updateBatchControlsUI();
         lucide.createIcons();
     }
 
@@ -303,13 +423,26 @@ export class UploadTab {
 
             const pendingImages = await api.listPendingImages();
 
-            if (pendingImages.error) {
+            if (pendingImages && pendingImages.error) {
                 throw new Error(pendingImages.error);
+            }
+
+            this.pendingImagesCache = pendingImages || [];
+            if (this.pendingQueueBadge) {
+                this.pendingQueueBadge.textContent = `${this.pendingImagesCache.length} 项`;
+            }
+
+            // Clean up selectedKeys if keys no longer exist
+            const validKeys = new Set(this.pendingImagesCache.map(img => img.key));
+            for (const key of Array.from(this.selectedKeys)) {
+                if (!validKeys.has(key)) {
+                    this.selectedKeys.delete(key);
+                }
             }
 
             this.pendingTbody.innerHTML = '';
 
-            if (!pendingImages || pendingImages.length === 0) {
+            if (this.pendingImagesCache.length === 0) {
                 this.pendingTbody.innerHTML = `
                     <div id="pending-empty-row" class="text-center py-16 text-slate-400">
                         <div class="flex flex-col items-center justify-center space-y-3">
@@ -323,15 +456,17 @@ export class UploadTab {
                         </div>
                     </div>
                 `;
+                this.updateBatchControlsUI();
                 lucide.createIcons();
                 return;
             }
 
-            pendingImages.forEach((img) => {
+            this.pendingImagesCache.forEach((img) => {
                 const tr = this.renderPendingRow(img);
                 this.pendingTbody.appendChild(tr);
             });
 
+            this.updateBatchControlsUI();
             lucide.createIcons();
         } catch (err) {
             console.error('Failed to load pending queue:', err);
@@ -348,22 +483,27 @@ export class UploadTab {
         const row = document.createElement('div');
         row.id = `pending-row-${img.key.replace(/[\/.]/g, '-')}`;
         row.setAttribute('data-key', img.key);
-        row.className = "flex flex-col md:grid md:grid-cols-12 md:gap-4 md:items-center p-4 md:px-5 md:py-3.5 bg-white hover:bg-slate-50/60 transition duration-150 gap-3 border-b border-slate-100";
+        row.className = "flex flex-col md:grid md:grid-cols-12 md:gap-3 md:items-center p-4 md:px-4 md:py-3.5 bg-white hover:bg-slate-50/60 transition duration-150 gap-3 border-b border-slate-100";
 
         const sizeStr = this.formatFileSize(img.size);
         const formattedTime = new Date(img.uploadedAt).toLocaleString('zh-CN');
 
-        // 目标日志缓存：读取时优先使用 LocalStorage 的局部修改日期
+        // 目标日志缓存：读取时优先使用 LocalStorage 的局部修改日期，其次智能提取文件名日期，再其次 suggestedDate，最后今日
         const cachedDate = localStorage.getItem(`pending_date_cache_${img.key}`);
-        const suggestedDateVal = cachedDate || img.suggestedDate || this.getTodayDateString();
+        const extractedDate = this.extractDateFromFilename(img.originalName);
+        const suggestedDateVal = cachedDate || extractedDate || img.suggestedDate || this.getTodayDateString();
         const statusBadge = this.getStatusBadgeHTML(img);
+        const isChecked = this.selectedKeys.has(img.key);
 
         row.innerHTML = `
-            <!-- 1. 缩略图列 (PC 占 1 列) -->
-            <div class="col-span-1 flex items-center space-x-3 md:space-x-0 min-w-0">
-                <div class="w-14 h-14 md:w-9 md:h-9 rounded-xl md:rounded-lg overflow-hidden border border-slate-200 cursor-zoom-in bg-slate-100 flex items-center justify-center transition hover:opacity-80 shrink-0">
+            <!-- 1. Checkbox & Mobile header (PC: col-span-1) -->
+            <div class="col-span-1 flex items-center space-x-3 shrink-0">
+                <input type="checkbox" class="pending-item-checkbox w-4 h-4 rounded text-rose-600 border-slate-300 focus:ring-rose-500 cursor-pointer shrink-0" ${isChecked ? 'checked' : ''}>
+                <!-- Mobile thumbnail -->
+                <div class="md:hidden w-12 h-12 rounded-lg overflow-hidden border border-slate-200 cursor-zoom-in bg-slate-100 flex items-center justify-center transition hover:opacity-80 shrink-0">
                     <img src="/api/pending-image?key=${encodeURIComponent(img.key)}" class="w-full h-full object-cover">
                 </div>
+                <!-- Mobile title and status badge -->
                 <div class="block md:hidden min-w-0 flex-1">
                     <div class="flex items-center justify-between gap-2">
                         <div class="text-xs font-bold text-slate-800 truncate" title="${img.originalName}">${img.originalName}</div>
@@ -379,27 +519,39 @@ export class UploadTab {
                 </div>
             </div>
 
-            <!-- 2. 文件信息列 (PC 占 3 列) -->
+            <!-- 2. PC Thumbnail (PC: col-span-1) -->
+            <div class="hidden md:flex col-span-1 items-center">
+                <div class="w-9 h-9 rounded-lg overflow-hidden border border-slate-200 cursor-zoom-in bg-slate-100 flex items-center justify-center transition hover:opacity-80 shrink-0">
+                    <img src="/api/pending-image?key=${encodeURIComponent(img.key)}" class="w-full h-full object-cover">
+                </div>
+            </div>
+
+            <!-- 3. PC Filename & Upload Time (PC: col-span-3) -->
             <div class="hidden md:block col-span-3 min-w-0">
                 <div class="text-xs font-semibold text-slate-800 truncate" title="${img.originalName}">${img.originalName}</div>
                 <div class="text-[10px] text-slate-400 mt-0.5 font-mono">上传时间: ${formattedTime}</div>
             </div>
 
-            <!-- 3. 日期选择器 (PC 占 4 列) -->
-            <div class="col-span-4 min-w-0 w-full">
+            <!-- 4. Target Date Input (PC: col-span-3) -->
+            <div class="col-span-3 min-w-0 w-full">
                 <div class="space-y-1 md:space-y-0 w-full">
                     <div class="md:hidden text-[10px] font-bold text-slate-400 uppercase tracking-wider">目标复盘日期</div>
                     <input type="date" value="${suggestedDateVal}" class="pending-date-input w-full min-w-0 px-2.5 py-1.5 border border-slate-200 rounded-xl text-xs font-mono font-semibold focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 bg-slate-50 text-slate-900">
                 </div>
             </div>
 
-            <!-- 4. 文件大小列 (PC 占 1 列) -->
+            <!-- 5. PC Status Badge (PC: col-span-1) -->
+            <div class="hidden md:flex col-span-1 items-center justify-center">
+                ${statusBadge}
+            </div>
+
+            <!-- 6. PC File Size (PC: col-span-1) -->
             <div class="hidden md:block col-span-1 text-[11px] text-slate-500 font-mono">
                 ${sizeStr}
             </div>
 
-            <!-- 5. 操作列 (PC 占 3 列) -->
-            <div class="col-span-3 min-w-0 w-full">
+            <!-- 7. Actions (PC: col-span-2) -->
+            <div class="col-span-2 min-w-0 w-full">
                 <div class="flex items-center justify-end w-full">
                     <div class="flex items-center space-x-2 min-w-0 flex-1 md:flex-initial md:w-auto justify-end">
                         <button class="process-item-btn flex-1 md:flex-none justify-center px-3.5 h-8 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-xs transition flex items-center space-x-1 border border-transparent">
@@ -414,13 +566,25 @@ export class UploadTab {
             </div>
         `;
 
-        const thumbWrap = row.querySelector('.cursor-zoom-in');
+        const checkbox = row.querySelector('.pending-item-checkbox');
+        const thumbs = row.querySelectorAll('.cursor-zoom-in');
         const dateInput = row.querySelector('.pending-date-input');
         const processBtn = row.querySelector('.process-item-btn');
         const deleteBtn = row.querySelector('.delete-item-btn');
 
-        thumbWrap.addEventListener('click', () => {
-            this.openPreviewModal(img.key, img.originalName);
+        checkbox.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                this.selectedKeys.add(img.key);
+            } else {
+                this.selectedKeys.delete(img.key);
+            }
+            this.updateBatchControlsUI();
+        });
+
+        thumbs.forEach(thumb => {
+            thumb.addEventListener('click', () => {
+                this.openPreviewModal(img.key, img.originalName);
+            });
         });
 
         // 目标日志缓存：日期更改事件触发时，自动本地写入 localStorage
@@ -467,13 +631,16 @@ export class UploadTab {
             const res = await api.processPendingImage(key, date, proxyConfig);
             if (res.error) throw new Error(res.error);
 
-            // 清除缓存
+            // 清除缓存与选中状态
             localStorage.removeItem(`pending_date_cache_${key}`);
+            this.selectedKeys.delete(key);
 
             // 成功后移除行
             rowElement.remove();
             if (this.pendingTbody.children.length === 0) {
                 await this.loadPendingQueue();
+            } else {
+                this.updateBatchControlsUI();
             }
 
             // 同步刷新每日复盘日期选择列表
@@ -502,12 +669,15 @@ export class UploadTab {
             const res = await api.deletePendingImage(key);
             if (res.error) throw new Error(res.error);
 
-            // 清除缓存
+            // 清除缓存与选中状态
             localStorage.removeItem(`pending_date_cache_${key}`);
+            this.selectedKeys.delete(key);
 
             rowElement.remove();
             if (this.pendingTbody.children.length === 0) {
                 await this.loadPendingQueue();
+            } else {
+                this.updateBatchControlsUI();
             }
         } catch (err) {
             console.error(`Failed to delete ${key}:`, err);
@@ -594,8 +764,9 @@ export class UploadTab {
                     const res = await api.processPendingImage(item.key, item.date, proxyConfig);
                     if (res.error) throw new Error(res.error);
 
-                    // 清除缓存
+                    // 清除缓存与选中状态
                     localStorage.removeItem(`pending_date_cache_${item.key}`);
+                    this.selectedKeys.delete(item.key);
 
                     item.row.remove();
                     successCount++;
