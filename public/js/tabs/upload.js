@@ -200,22 +200,34 @@ export class UploadTab {
         };
     }
 
+    escapeHTML(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
     extractDateFromFilename(filename) {
         if (!filename) return null;
         const name = String(filename).trim();
 
-        // 1. Match YYYY-MM-DD, YYYY_MM_DD, YYYY.MM.DD, or YYYYMMDD
+        // 1. Match YYYY-MM-DD, YYYY_MM_DD, YYYY.MM.DD
         const fullDateMatch = name.match(/(20\d{2})[-_.年](\d{1,2})[-_.月](\d{1,2})日?/);
         if (fullDateMatch) {
             const year = fullDateMatch[1];
             const month = fullDateMatch[2].padStart(2, '0');
             const day = fullDateMatch[3].padStart(2, '0');
-            return `${year}-${month}-${day}`;
+            const dateStr = `${year}-${month}-${day}`;
+            if (this.isValidDate(dateStr)) return dateStr;
         }
 
         const compactMatch = name.match(/(20\d{2})(\d{2})(\d{2})/);
         if (compactMatch) {
-            return `${compactMatch[1]}-${compactMatch[2]}-${compactMatch[3]}`;
+            const dateStr = `${compactMatch[1]}-${compactMatch[2]}-${compactMatch[3]}`;
+            if (this.isValidDate(dateStr)) return dateStr;
         }
 
         // 2. Match MM-DD, M.D (e.g. 08-19, 8.19, 8月19日) -> prepends current year
@@ -224,7 +236,8 @@ export class UploadTab {
             const year = new Date().getFullYear();
             const month = monthDayMatch[1].padStart(2, '0');
             const day = monthDayMatch[2].padStart(2, '0');
-            return `${year}-${month}-${day}`;
+            const dateStr = `${year}-${month}-${day}`;
+            if (this.isValidDate(dateStr)) return dateStr;
         }
 
         return null;
@@ -326,7 +339,11 @@ export class UploadTab {
     }
 
     isValidDate(dateStr) {
-        return /^\d{4}-\d{2}-\d{2}$/.test(dateStr);
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return false;
+        const [year, month, day] = dateStr.split('-').map(Number);
+        if (year < 2000 || year > 2099 || month < 1 || month > 12 || day < 1 || day > 31) return false;
+        const d = new Date(year, month - 1, day);
+        return d.getFullYear() === year && d.getMonth() === month - 1 && d.getDate() === day;
     }
 
     getStatusBadgeHTML(img) {
@@ -495,6 +512,8 @@ export class UploadTab {
         const statusBadge = this.getStatusBadgeHTML(img);
         const isChecked = this.selectedKeys.has(img.key);
 
+        const escapedName = this.escapeHTML(img.originalName);
+
         row.innerHTML = `
             <!-- 1. Checkbox & Mobile header (PC: col-span-1) -->
             <div class="col-span-1 flex items-center space-x-3 shrink-0">
@@ -506,7 +525,7 @@ export class UploadTab {
                 <!-- Mobile title and status badge -->
                 <div class="block md:hidden min-w-0 flex-1">
                     <div class="flex items-center justify-between gap-2">
-                        <div class="text-xs font-bold text-slate-800 truncate" title="${img.originalName}">${img.originalName}</div>
+                        <div class="text-xs font-bold text-slate-800 truncate" title="${escapedName}">${escapedName}</div>
                         <div class="mobile-status-container flex items-center shrink-0">
                             ${statusBadge}
                         </div>
@@ -528,7 +547,7 @@ export class UploadTab {
 
             <!-- 3. PC Filename & Upload Time (PC: col-span-3) -->
             <div class="hidden md:block col-span-3 min-w-0">
-                <div class="text-xs font-semibold text-slate-800 truncate" title="${img.originalName}">${img.originalName}</div>
+                <div class="text-xs font-semibold text-slate-800 truncate" title="${escapedName}">${escapedName}</div>
                 <div class="text-[10px] text-slate-400 mt-0.5 font-mono">上传时间: ${formattedTime}</div>
             </div>
 
