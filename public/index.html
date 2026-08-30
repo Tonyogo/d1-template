@@ -429,15 +429,28 @@
                         <h3 class="text-sm font-bold text-slate-900 flex items-center space-x-2">
                             <i data-lucide="layers" class="w-4 h-4 text-rose-600"></i>
                             <span>待处理暂存队列 (云端 R2)</span>
+                            <span id="pending-queue-badge" class="px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-slate-100 text-slate-600 border border-slate-200">0 项</span>
                         </h3>
-                        <p class="text-xs text-slate-500 mt-0.5">批量图片将在此安全暂存，可自由选择单项解析或一键多线程极速入库</p>
+                        <p class="text-xs text-slate-500 mt-0.5">批量图片在此安全暂存，支持多选批量管理、单项解析或一键多线程并发入库</p>
                     </div>
-                    <div class="flex flex-col lg:flex-row items-stretch lg:items-center gap-3 w-full lg:w-auto lg:shrink-0">
+                    <div class="flex flex-col lg:flex-row items-stretch lg:items-center gap-2.5 w-full lg:w-auto lg:shrink-0">
+                        <!-- Batch Tools -->
+                        <div class="flex items-center space-x-2">
+                            <button id="pending-batch-today-btn" class="px-3 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-600 hover:text-slate-900 rounded-xl text-xs font-semibold transition flex items-center space-x-1 shadow-2xs" title="将所有待处理项日期设为今日">
+                                <i data-lucide="calendar" class="w-3.5 h-3.5 text-slate-400"></i>
+                                <span>设为今日</span>
+                            </button>
+                            <button id="pending-batch-delete-btn" disabled class="px-3 py-1.5 border border-rose-200/80 bg-rose-50/50 text-rose-600 opacity-50 cursor-not-allowed rounded-xl text-xs font-semibold transition flex items-center space-x-1 shadow-2xs">
+                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                <span id="pending-batch-delete-text">批量删除</span>
+                            </button>
+                        </div>
+
                         <!-- Concurrency selector -->
                         <div class="flex items-center justify-between lg:justify-start space-x-1.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-500 font-semibold shadow-xs">
                             <div class="flex items-center space-x-1.5">
                                 <i data-lucide="zap" class="w-3.5 h-3.5 text-rose-600"></i>
-                                <span>并发线程:</span>
+                                <span>并发:</span>
                             </div>
                             <select id="pending-concurrency-select" class="bg-transparent focus:outline-none text-slate-800 font-bold select-none cursor-pointer py-0 my-0 border-none font-mono">
                                 <option value="1">1 (稳健)</option>
@@ -447,6 +460,7 @@
                                 <option value="10">10 (全开)</option>
                             </select>
                         </div>
+
                         <!-- Controls -->
                         <div class="grid grid-cols-2 gap-2 w-full lg:flex lg:items-center lg:space-x-2 lg:w-auto">
                             <button id="pending-refresh-btn" class="justify-center px-3.5 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-600 hover:text-slate-900 rounded-xl text-xs font-semibold transition flex items-center space-x-1.5">
@@ -464,12 +478,16 @@
                 <!-- Table Container -->
                 <div class="overflow-hidden border border-slate-200/80 rounded-xl">
                     <!-- Desktop Table Header -->
-                    <div class="hidden md:grid grid-cols-12 gap-4 bg-slate-50/80 px-5 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200/60">
+                    <div class="hidden md:grid grid-cols-12 gap-3 bg-slate-50/80 px-4 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200/60 items-center">
+                        <div class="col-span-1 flex items-center space-x-2">
+                            <input type="checkbox" id="pending-select-all-header" class="w-4 h-4 rounded text-rose-600 border-slate-300 focus:ring-rose-500 cursor-pointer">
+                        </div>
                         <div class="col-span-1">缩略图</div>
                         <div class="col-span-3">文件名 / 上传时间</div>
-                        <div class="col-span-4">目标日期 (智能建议)</div>
+                        <div class="col-span-3">目标复盘日期</div>
+                        <div class="col-span-1 text-center">状态</div>
                         <div class="col-span-1">大小</div>
-                        <div class="col-span-3 text-right">操作</div>
+                        <div class="col-span-2 text-right">操作</div>
                     </div>
                     <!-- Queue List Body -->
                     <div id="pending-tbody" class="divide-y divide-slate-100 bg-white">
