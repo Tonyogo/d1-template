@@ -415,10 +415,14 @@ export class UploadTab {
             msg.textContent = `正在上传并云端暂存图片... (${uploaded}/${total})`;
         } else {
             this.dropZone.innerHTML = `
-                <div class="flex flex-col items-center justify-center space-y-3">
-                    <div class="w-8 h-8 border-2 border-rose-600 border-t-transparent rounded-full animate-spin"></div>
-                    <p class="text-xs font-bold text-slate-800" id="stash-progress-msg">正在上传并云端暂存图片... (${uploaded}/${total})</p>
-                    <p class="text-[11px] text-slate-400">请勿关闭当前页面，上传成功后会自动刷新待处理列表</p>
+                <div class="flex items-center justify-between w-full py-1">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-5 h-5 border-2 border-rose-600 border-t-transparent rounded-full animate-spin shrink-0"></div>
+                        <div>
+                            <p class="text-xs font-bold text-slate-800" id="stash-progress-msg">正在上传并云端暂存图片... (${uploaded}/${total})</p>
+                            <p class="text-[10px] text-slate-400">正在暂存至云端 R2 队列，完成后自动刷新列表</p>
+                        </div>
+                    </div>
                 </div>
             `;
         }

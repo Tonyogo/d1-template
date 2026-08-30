@@ -400,25 +400,26 @@
         </section>
 
         <!-- ==================== TAB 4: UPLOAD DATA & CONSOLE ==================== -->
-        <section id="tab-content-upload" class="hidden space-y-6">
-            <!-- Upload Drop Area -->
-            <div class="financial-card p-6 rounded-2xl space-y-4">
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                    <div>
-                        <h2 class="text-base font-bold text-slate-900 tracking-tight flex items-center gap-2">
-                            <i data-lucide="cloud-upload" class="w-4 h-4 text-rose-600"></i>
-                            <span>上传复盘图片与极速云暂存</span>
-                        </h2>
-                        <p class="text-xs text-slate-500 mt-0.5">支持拖入多张长图（PNG, JPG, WEBP），直接批量上传至云端 R2 待处理队列</p>
+        <section id="tab-content-upload" class="hidden space-y-5">
+            <!-- Compact Upload Drop Banner -->
+            <div id="drop-zone" class="financial-card px-5 py-4 rounded-2xl border-2 border-dashed border-slate-300 hover:border-rose-500/80 bg-slate-50/60 hover:bg-rose-50/20 cursor-pointer transition-all duration-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 group">
+                <input type="file" id="file-input" class="hidden" accept=".png,.jpg,.jpeg,.webp" multiple>
+                <div class="flex items-center space-x-3.5 min-w-0">
+                    <div class="p-2.5 bg-rose-50 group-hover:bg-rose-100/80 rounded-xl text-rose-600 border border-rose-100 transition-colors shrink-0">
+                        <i data-lucide="cloud-upload" class="w-5 h-5"></i>
+                    </div>
+                    <div class="truncate">
+                        <div class="text-xs font-bold text-slate-800 flex items-center space-x-1.5">
+                            <span>拖拽复盘长图至此，或</span>
+                            <span class="text-rose-600 group-hover:text-rose-700 underline underline-offset-2">点击选择文件</span>
+                        </div>
+                        <p class="text-[11px] text-slate-400 mt-0.5 truncate">支持多选批量上传（PNG / JPG / WEBP），极速暂存至云端 R2 待处理队列</p>
                     </div>
                 </div>
-                <div id="drop-zone" class="border-2 border-dashed border-slate-300 hover:border-rose-500/80 bg-slate-50/50 hover:bg-rose-50/20 rounded-2xl p-8 text-center cursor-pointer transition-all duration-200 flex flex-col items-center justify-center min-h-[180px]">
-                    <input type="file" id="file-input" class="hidden" accept=".png,.jpg,.jpeg,.webp" multiple>
-                    <div class="p-3 bg-white rounded-2xl text-rose-600 shadow-sm mb-3 border border-slate-200/60">
-                        <i data-lucide="upload" class="w-7 h-7"></i>
-                    </div>
-                    <p class="text-xs font-bold text-slate-700">将复盘长图拖拽至此，或 <span class="text-rose-600 hover:text-rose-700 underline underline-offset-2">点击选择文件</span></p>
-                    <p class="text-[11px] text-slate-400 mt-1">支持批量上传，单张图片建议不超过 20MB</p>
+                <div class="hidden sm:flex items-center space-x-2 shrink-0">
+                    <span class="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-white border border-slate-200 text-slate-600 shadow-2xs group-hover:border-rose-200 transition-colors">
+                        支持批量拖入
+                    </span>
                 </div>
             </div>
 
