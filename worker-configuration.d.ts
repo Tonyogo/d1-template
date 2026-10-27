@@ -6,8 +6,8 @@ declare namespace Cloudflare {
 		mainModule: typeof import("./src/index");
 	}
 	interface Env {
-		GEMINI_API_BASE: "https://google.yatao.cc.cd";
-		GEMINI_MODEL: "gemini-pro-latest";
+		GEMINI_API_BASE: "https://www.yatao.cc.cd";
+		GEMINI_MODEL: "gemini-flash-latest";
 		GEMINI_API_KEY: string;
 		BUCKET: R2Bucket;
 		DB: D1Database;
