@@ -3,6 +3,7 @@ import { SectorRepository } from '../repositories/sector.repository';
 import { StockRepository } from '../repositories/stock.repository';
 import { GeminiClient } from '../utils/gemini.client';
 import { OcrParser } from '../utils/ocr-parser';
+import { ImageService } from './image.service';
 import { Env } from '../types';
 
 export class UploadService {
@@ -252,4 +253,37 @@ export class UploadService {
 			stocksCount
 		};
 	}
+
+	/**
+	 * 重新对指定日期的归档长图执行 Gemini OCR 识别，并返回生成的 Markdown 文本
+	 * @param date YYYY-MM-DD 日期
+	 * @returns 返回 Gemini 识别生成的原始 rawMarkdown 文本
+	 */
+	async reparseArchivedImage(date: string): Promise<string> {
+		if (!this.r2Bucket) {
+			throw new Error("R2 bucket is not configured");
+		}
+
+		const imageService = new ImageService(this.r2Bucket);
+		let imageObject = await imageService.getImageByDate(date);
+
+		if (!imageObject) {
+			// 若常见后缀未命中，尝试通过前缀检索
+			const listed = await this.r2Bucket.list({ prefix: `images/${date}.` });
+			if (listed.objects.length > 0) {
+				imageObject = await this.r2Bucket.get(listed.objects[0].key);
+			}
+		}
+
+		if (!imageObject) {
+			throw new Error(`未找到 ${date} 对应的归档图片，无法重新进行 Gemini 解析`);
+		}
+
+		const mimeType = imageObject.httpMetadata?.contentType || "image/png";
+		const tempResponse = new Response(imageObject.body);
+		const imageBlob = await tempResponse.blob();
+
+		return await GeminiClient.callGeminiOCR(imageBlob, mimeType, this.env);
+	}
 }
+

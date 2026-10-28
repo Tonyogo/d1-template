@@ -7,6 +7,7 @@ export class ReviewTab {
         this.availableDates = []; // 保存所有有数据的日期字符串数组 ['2026-08-18', ...]
         this.viewYear = new Date().getFullYear();
         this.viewMonth = new Date().getMonth(); // 0-indexed (0 = 1月)
+        this.isReparsing = false;
 
         this.initDOM();
         this.initCalendarDOM();
@@ -220,10 +221,14 @@ export class ReviewTab {
         this.editMarkdownTextarea = document.getElementById('edit-markdown-textarea');
         this.editModalCancelBtn = document.getElementById('edit-modal-cancel-btn');
         this.editModalSaveBtn = document.getElementById('edit-modal-save-btn');
+        this.editModalReparseBtn = document.getElementById('edit-modal-reparse-btn');
 
         this.editModalClose.addEventListener('click', () => this.closeEditModal());
         this.editModalCancelBtn.addEventListener('click', () => this.closeEditModal());
         this.editModalSaveBtn.addEventListener('click', () => this.saveMarkdownCorrection());
+        if (this.editModalReparseBtn) {
+            this.editModalReparseBtn.addEventListener('click', () => this.reparseWithGemini());
+        }
 
         this.editModal.addEventListener('click', (e) => {
             if (e.target === this.editModal) {
@@ -418,6 +423,10 @@ export class ReviewTab {
         this.editMarkdownTextarea.disabled = true;
         this.editModalSaveBtn.disabled = true;
         this.editModalSaveBtn.classList.add('opacity-50');
+        if (this.editModalReparseBtn) {
+            this.editModalReparseBtn.disabled = true;
+            this.editModalReparseBtn.classList.add('opacity-50');
+        }
 
         this.editModal.classList.remove('hidden');
         lucide.createIcons();
@@ -432,6 +441,10 @@ export class ReviewTab {
             this.editMarkdownTextarea.disabled = false;
             this.editModalSaveBtn.disabled = false;
             this.editModalSaveBtn.classList.remove('opacity-50');
+            if (this.editModalReparseBtn) {
+                this.editModalReparseBtn.disabled = false;
+                this.editModalReparseBtn.classList.remove('opacity-50');
+            }
         } catch (err) {
             console.error(err);
             alert(`获取失败: ${err.message || err}`);
@@ -441,6 +454,52 @@ export class ReviewTab {
 
     closeEditModal() {
         this.editModal.classList.add('hidden');
+    }
+
+    async reparseWithGemini() {
+        if (!this.currentLoadedDate || this.isReparsing) return;
+
+        const currentText = this.editMarkdownTextarea.value.trim();
+        if (currentText) {
+            const confirmed = confirm('确定要使用 Gemini 重新解析当天的复盘长图吗？\n解析完成后将覆盖当前输入框中的 Markdown 内容（确认无误后需点击“确认修改并入库”）。');
+            if (!confirmed) return;
+        }
+
+        this.isReparsing = true;
+        const originalBtnHTML = this.editModalReparseBtn.innerHTML;
+
+        this.editModalReparseBtn.disabled = true;
+        this.editModalReparseBtn.classList.add('opacity-50');
+        this.editModalSaveBtn.disabled = true;
+        this.editModalSaveBtn.classList.add('opacity-50');
+        this.editMarkdownTextarea.disabled = true;
+        this.editModalReparseBtn.innerHTML = `<div class="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-purple-600"></div> <span>Gemini 解析中...</span>`;
+        this.editModalDate.textContent = `Gemini 正在重新对 ${this.currentLoadedDate} 的归档长图执行识别，请稍候...`;
+
+        try {
+            const data = await api.reparseMarkdown(this.currentLoadedDate);
+            if (data.error || (!data.markdown && !data.rawMarkdown)) {
+                throw new Error(data.message || data.error || 'Gemini 重新解析失败');
+            }
+
+            const newMarkdown = data.markdown || data.rawMarkdown;
+            this.editMarkdownTextarea.value = newMarkdown;
+            this.editModalDate.textContent = `已完成 Gemini 重新解析 (${this.currentLoadedDate})，请核对后确认修改并入库`;
+            alert('Gemini 重新解析完成！内容已更新至文本框中，请核对后点击“确认修改并入库”。');
+        } catch (err) {
+            console.error('Failed to reparse with Gemini:', err);
+            alert(`重新解析失败: ${err.message || err}`);
+            this.editModalDate.textContent = `正在修改 ${this.currentLoadedDate} 的复盘 Markdown 备份`;
+        } finally {
+            this.isReparsing = false;
+            this.editModalReparseBtn.disabled = false;
+            this.editModalReparseBtn.classList.remove('opacity-50');
+            this.editModalReparseBtn.innerHTML = originalBtnHTML;
+            this.editMarkdownTextarea.disabled = false;
+            this.editModalSaveBtn.disabled = false;
+            this.editModalSaveBtn.classList.remove('opacity-50');
+            lucide.createIcons();
+        }
     }
 
     async saveMarkdownCorrection() {

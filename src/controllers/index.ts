@@ -21,5 +21,6 @@ export function registerRoutes(app: Hono<{ Bindings: Env }>) {
 	app.post('/api/batch/commit-parsed', uploadController.commitParsed);
 	app.get('/api/markdown', uploadController.getMarkdown);
 	app.post('/api/markdown/commit', uploadController.commitMarkdownUpdate);
+	app.post('/api/markdown/reparse', uploadController.reparseMarkdown);
 	app.post('/api/feishu/callback', feishuController.handleCallback);
 }

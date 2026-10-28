@@ -202,3 +202,40 @@ export async function commitMarkdownUpdate(c: Context) {
 		return c.json({ error: "Internal Server Error during markdown commit", message: error.message }, 500);
 	}
 }
+
+export async function reparseMarkdown(c: Context) {
+	if (!c.env.GEMINI_API_KEY) {
+		return c.json({ error: "GEMINI_API_KEY is not configured. Please set it in your environment." }, 400);
+	}
+
+	try {
+		let date: string | undefined;
+		if (c.req.header('content-type')?.includes('application/json')) {
+			const body = await c.req.json().catch(() => ({}));
+			date = body?.date;
+		}
+		if (!date) {
+			date = c.req.query('date');
+		}
+
+		if (!date) {
+			return c.json({ error: "Missing date parameter" }, 400);
+		}
+
+		const db = c.env.DB;
+		const uploadService = new UploadService(
+			new SummaryRepository(db),
+			new SectorRepository(db),
+			new StockRepository(db),
+			c.env,
+			c.env.BUCKET || null
+		);
+
+		const rawMarkdown = await uploadService.reparseArchivedImage(date);
+		return c.json({ success: true, markdown: rawMarkdown, rawMarkdown });
+	} catch (error: any) {
+		console.error("Error inside reparseMarkdown controller:", error);
+		return c.json({ error: "Internal Server Error during markdown reparse", message: error.message }, 500);
+	}
+}
+

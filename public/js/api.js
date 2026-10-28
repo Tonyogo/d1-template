@@ -37,5 +37,6 @@ export const api = {
     commitParsedMarkdown: (key, date, rawMarkdown) => api.fetchJson('/api/batch/commit-parsed', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key, date, rawMarkdown }) }),
     deletePendingImage: (key) => api.fetchJson('/api/pending-image', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key }) }),
     getMarkdown: (date) => api.fetchJson(`/api/markdown?date=${encodeURIComponent(date)}`),
-    commitMarkdownUpdate: (payload) => api.fetchJson('/api/markdown/commit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+    commitMarkdownUpdate: (payload) => api.fetchJson('/api/markdown/commit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }),
+    reparseMarkdown: (date) => api.fetchJson('/api/markdown/reparse', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ date }) })
 };
